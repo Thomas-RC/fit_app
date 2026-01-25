@@ -112,11 +112,13 @@
                                     @if($recipe->meal_type === 'breakfast') meal-type-breakfast
                                     @elseif($recipe->meal_type === 'lunch') meal-type-lunch
                                     @elseif($recipe->meal_type === 'dinner') meal-type-dinner
+                                    @elseif($recipe->meal_type === 'snack') bg-purple-100 text-purple-700
                                     @endif">
-                                    @if($recipe->meal_type === 'breakfast') Śniadanie
-                                    @elseif($recipe->meal_type === 'lunch') Obiad
-                                    @elseif($recipe->meal_type === 'dinner') Kolacja
-                                    @else Przekąska
+                                    @if($recipe->meal_type === 'breakfast') 🥐 Śniadanie
+                                    @elseif($recipe->meal_type === 'lunch') 🍽️ Obiad
+                                    @elseif($recipe->meal_type === 'dinner') 🌙 Kolacja
+                                    @elseif($recipe->meal_type === 'snack') 🍪 Przekąska
+                                    @else Posiłek
                                     @endif
                                 </span>
                                 <h3 class="text-lg font-bold text-gray-900 m-0">{{ $recipe->recipe_title }}</h3>
