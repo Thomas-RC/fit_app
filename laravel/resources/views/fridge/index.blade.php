@@ -82,7 +82,6 @@
 
                     <form id="delete-all-form" action="{{ route('fridge.delete-all') }}" method="POST" class="inline">
                         @csrf
-                        @method('DELETE')
                         <button
                             type="submit"
                             onclick="return confirm('Czy na pewno chcesz usunąć wszystkie produkty z lodówki?')"

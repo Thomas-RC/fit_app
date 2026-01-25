@@ -47,7 +47,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/store-batch', [FridgeController::class, 'storeBatch'])->name('store-batch');
 
         // Bulk Delete
-        Route::delete('/delete-all', [FridgeController::class, 'deleteAll'])->name('delete-all');
+        Route::post('/delete-all', [FridgeController::class, 'deleteAll'])->name('delete-all');
         Route::post('/delete-selected', [FridgeController::class, 'deleteSelected'])->name('delete-selected');
     });
 

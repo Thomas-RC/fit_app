@@ -160,15 +160,23 @@
                                 </div>
                             </div>
 
-                            <!-- Steps Section -->
+                            <!-- Instructions Section -->
                             <div class="steps">
                                 <h4 class="font-semibold text-gray-700 mb-2">Sposób przygotowania:</h4>
-                                @if(isset($recipeData['analyzedInstructions'][0]['steps']) && count($recipeData['analyzedInstructions'][0]['steps']) > 0)
-                                    <ol class="text-sm text-gray-600">
-                                        @foreach($recipeData['analyzedInstructions'][0]['steps'] as $step)
-                                            <li class="mb-2">{{ $step['step_pl'] ?? $step['step'] }}</li>
-                                        @endforeach
-                                    </ol>
+                                @if(isset($recipeData['instructions_pl']) && !empty($recipeData['instructions_pl']))
+                                    @php
+                                        $instructionsText = is_array($recipeData['instructions_pl'])
+                                            ? implode("\n\n", $recipeData['instructions_pl'])
+                                            : $recipeData['instructions_pl'];
+                                    @endphp
+                                    <p class="text-sm text-gray-600 whitespace-pre-line">{{ $instructionsText }}</p>
+                                @elseif(isset($recipeData['instructions']) && !empty($recipeData['instructions']))
+                                    @php
+                                        $instructionsText = is_array($recipeData['instructions'])
+                                            ? implode("\n\n", $recipeData['instructions'])
+                                            : $recipeData['instructions'];
+                                    @endphp
+                                    <p class="text-sm text-gray-600 whitespace-pre-line">{{ $instructionsText }}</p>
                                 @else
                                     <p class="text-sm text-gray-500 mb-3">Instrukcje niedostępne w API</p>
                                 @endif

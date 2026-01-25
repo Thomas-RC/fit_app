@@ -18,6 +18,8 @@ class SpoonacularService
 
     /**
      * Search for recipes based on ingredients.
+     * NOTE: This endpoint does NOT support 'type' or 'diet' parameters.
+     * Use complexSearch for filtering by diet/type.
      *
      * @param array $ingredients
      * @param array $preferences
@@ -29,20 +31,13 @@ class SpoonacularService
             $params = [
                 'apiKey' => $this->apiKey,
                 'ingredients' => implode(',', $ingredients),
-                'number' => 50, // Increased for more variety
+                'number' => 300, // Increased to 300 for maximum variety
                 'ranking' => 2, // Maximize used ingredients
                 'ignorePantry' => true,
             ];
 
-            // Add diet filter if specified
-            if (isset($preferences['diet_type']) && $preferences['diet_type'] !== 'omnivore') {
-                $params['diet'] = $preferences['diet_type'];
-            }
-
-            // Add intolerances (allergies)
-            if (isset($preferences['allergies']) && !empty($preferences['allergies'])) {
-                $params['intolerances'] = implode(',', $preferences['allergies']);
-            }
+            // NOTE: 'type' and 'diet' parameters are NOT supported by findByIngredients endpoint
+            // Filtering will be done locally after fetching detailed recipe information
 
             $response = Http::get("{$this->baseUrl}/recipes/findByIngredients", $params);
 
@@ -77,7 +72,8 @@ class SpoonacularService
     }
 
     /**
-     * Get detailed recipe information.
+     * Get detailed recipe information with full nutrition data.
+     * ALWAYS includes nutrition information.
      *
      * @param int $recipeId
      * @return array
@@ -87,16 +83,24 @@ class SpoonacularService
         try {
             $response = Http::get("{$this->baseUrl}/recipes/{$recipeId}/information", [
                 'apiKey' => $this->apiKey,
-                'includeNutrition' => 'true',
+                'includeNutrition' => 'true', // ALWAYS include nutrition
             ]);
 
             if ($response->successful()) {
                 return $response->json();
             }
 
+            Log::error('Spoonacular Recipe Info Error', [
+                'recipe_id' => $recipeId,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
             return ['error' => 'Failed to fetch recipe information'];
         } catch (\Exception $e) {
-            Log::error('Spoonacular Recipe Info Error: ' . $e->getMessage());
+            Log::error('Spoonacular Recipe Info Exception: ' . $e->getMessage(), [
+                'recipe_id' => $recipeId,
+            ]);
             return ['error' => $e->getMessage()];
         }
     }
@@ -222,10 +226,11 @@ class SpoonacularService
             $defaults = [
                 'apiKey' => $this->apiKey,
                 'number' => 12,
-                'addRecipeInformation' => true,
-                'fillIngredients' => true,
-                'addRecipeNutrition' => true,
-                'instructionsRequired' => true,
+                'addRecipeInformation' => 'true',  // Must be string 'true', not boolean
+                'fillIngredients' => 'true',       // Must be string 'true', not boolean
+                'addRecipeNutrition' => 'true',    // Must be string 'true', not boolean
+                'addRecipeInstructions' => 'true', // Must be string 'true', not boolean
+                // NOTE: instructionsRequired is NOT reliable in Spoonacular API - validate manually instead
                 'sort' => 'popularity',
             ];
 
@@ -259,5 +264,91 @@ class SpoonacularService
             Log::error('Spoonacular Complex Search Exception: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Complex search specifically for a meal type with calorie constraints.
+     * Uses optimized parameters for breakfast, lunch, or dinner.
+     *
+     * @param string $mealType 'breakfast', 'lunch', 'dinner'
+     * @param int $dailyCalories User's daily calorie target
+     * @param array $preferences User preferences (diet_type, allergies, exclude_ingredients)
+     * @return array
+     */
+    public function complexSearchByMealType(
+        string $mealType,
+        int $dailyCalories,
+        array $preferences = []
+    ): array {
+        // Define meal type configurations
+        $typeMapping = [
+            'breakfast' => [
+                'type' => 'breakfast',
+                'minCalPercent' => 0.20,
+                'maxCalPercent' => 0.35,
+                'maxReadyTime' => 30,
+            ],
+            'lunch' => [
+                'type' => 'main course,soup',
+                'minCalPercent' => 0.30,
+                'maxCalPercent' => 0.45,
+            ],
+            'dinner' => [
+                'type' => 'main course,salad,side dish,soup',
+                'minCalPercent' => 0.20,
+                'maxCalPercent' => 0.35,
+            ],
+        ];
+
+        $config = $typeMapping[$mealType] ?? $typeMapping['lunch'];
+
+        $params = [
+            'type' => $config['type'],
+            'minCalories' => round($dailyCalories * $config['minCalPercent']),
+            'maxCalories' => round($dailyCalories * $config['maxCalPercent']),
+            'number' => 50,
+            'addRecipeNutrition' => 'true',      // Must be string
+            'addRecipeInformation' => 'true',    // Must be string
+            'addRecipeInstructions' => 'true',   // Must be string
+            'sort' => 'random',
+            'offset' => rand(0, 100), // Randomization for variety
+        ];
+
+        // Add maxReadyTime for breakfast
+        if (isset($config['maxReadyTime'])) {
+            $params['maxReadyTime'] = $config['maxReadyTime'];
+        }
+
+        // Add diet filter (skip for omnivore)
+        if (isset($preferences['diet_type']) && $preferences['diet_type'] !== 'omnivore') {
+            $dietMapping = [
+                'vegetarian' => 'vegetarian',
+                'vegan' => 'vegan',
+                'keto' => 'ketogenic',
+            ];
+            $params['diet'] = $dietMapping[$preferences['diet_type']] ?? null;
+
+            // Add keto-specific constraints
+            if ($preferences['diet_type'] === 'keto') {
+                $params['maxCarbs'] = 50;  // Max 50g carbs per recipe
+                $params['minFat'] = 20;    // Min 20g fat per recipe
+            }
+        }
+
+        // Add intolerances (allergies)
+        if (!empty($preferences['allergies'])) {
+            $params['intolerances'] = implode(',', $preferences['allergies']);
+        }
+
+        // Add excluded ingredients
+        if (!empty($preferences['exclude_ingredients'])) {
+            $params['excludeIngredients'] = implode(',', $preferences['exclude_ingredients']);
+        }
+
+        Log::info("ComplexSearch by meal type: {$mealType}", [
+            'params' => array_filter($params, fn($v) => $v !== null && $v !== ''),
+        ]);
+
+        return $this->complexSearch($params);
     }
 }

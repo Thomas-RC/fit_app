@@ -179,17 +179,7 @@ class FridgeController extends Controller
         $user = auth()->user();
         $products = $request->products;
 
-        // Translate product names from English to Polish using VertexAI
-        $productNames = array_column($products, 'product_name');
-        $translatedNames = $this->vertexAIService->translateToPolish($productNames);
-
-        // Replace product names with translated versions
-        foreach ($products as $index => &$productData) {
-            if (isset($translatedNames[$index])) {
-                $productData['product_name'] = $translatedNames[$index];
-            }
-        }
-
+        // Products are already in Polish from AI detection - no translation needed
         $productsAdded = 0;
 
         foreach ($products as $productData) {

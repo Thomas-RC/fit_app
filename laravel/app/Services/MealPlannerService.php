@@ -20,6 +20,7 @@ class MealPlannerService
 
     /**
      * Generate a meal plan for a user based on their fridge items and preferences.
+     * Uses HYBRID approach: findByIngredients when fridge has items, complexSearch otherwise.
      *
      * @param User $user
      * @param string $date
@@ -30,17 +31,17 @@ class MealPlannerService
         try {
             // Get user preferences
             $preferences = $user->preferences;
-            $targetCalories = $preferences->daily_calories ?? 2000;
+            $dailyCalories = $preferences->daily_calories ?? 2000;
 
             // Get user's fridge items
             $fridgeItems = $user->fridgeItems()->pluck('product_name')->toArray();
 
-            // Prepare preferences array for API
+            // Prepare preferences array
             $preferencesArray = [
                 'diet_type' => $preferences->diet_type ?? 'omnivore',
                 'allergies' => $preferences->allergies ?? [],
                 'exclude_ingredients' => $preferences->exclude_ingredients ?? [],
-                'daily_calories' => $targetCalories,
+                'daily_calories' => $dailyCalories,
             ];
 
             // Get recently used recipe IDs (last 30 days) to avoid repetition
@@ -54,155 +55,102 @@ class MealPlannerService
                 ->unique()
                 ->toArray();
 
-            // If user has fridge items, search for recipes using those ingredients
+            Log::info('Starting meal plan generation', [
+                'user_id' => $user->id,
+                'date' => $date,
+                'daily_calories' => $dailyCalories,
+                'diet_type' => $preferencesArray['diet_type'],
+                'has_fridge_items' => !empty($fridgeItems),
+                'fridge_item_count' => count($fridgeItems),
+            ]);
+
+            // === DECISION TREE: Choose strategy based on fridge items ===
+
             if (!empty($fridgeItems)) {
-                $recipes = $this->spoonacularService->searchRecipesByIngredients(
+                // === SCENARIO A: User HAS fridge items ===
+                Log::info('Using complexSearch with fridge items and meal-specific parameters');
+
+                $recipesByMealType = $this->fetchRecipesWithFridgeItems(
                     $fridgeItems,
-                    $preferencesArray
-                );
-
-                if (isset($recipes['error']) || empty($recipes)) {
-                    Log::error('Failed to fetch recipes: ' . ($recipes['error'] ?? 'empty result'));
-
-                    // If it's an API limit error, return it with flag
-                    if (isset($recipes['api_limit']) && $recipes['api_limit']) {
-                        return [
-                            'error' => $recipes['error'],
-                            'api_limit' => true
-                        ];
-                    }
-
-                    return null;
-                }
-
-                // Shuffle for variety and enrich more recipes for better selection
-                shuffle($recipes);
-                $enrichedRecipes = $this->enrichRecipesWithNutrition(array_slice($recipes, 0, 30));
-
-                if (empty($enrichedRecipes)) {
-                    Log::error('Failed to enrich recipes with nutrition data');
-                    return null;
-                }
-
-                // Filter recipes by calorie ranges to ensure they fit within daily budget
-                $filteredRecipes = $this->filterRecipesByCalorieRanges($enrichedRecipes, $targetCalories);
-
-                if (empty($filteredRecipes)) {
-                    Log::warning('No recipes found within calorie ranges, using all enriched recipes');
-                    $filteredRecipes = $enrichedRecipes;
-                }
-
-                // Use VertexAI to select the best 3 recipes
-                $selectedRecipeIds = $this->vertexAIService->selectBestRecipes(
-                    $filteredRecipes,
                     $preferencesArray,
-                    $recentRecipeIds,
-                    $fridgeItems
+                    $dailyCalories
                 );
 
-                if (empty($selectedRecipeIds)) {
-                    Log::error('Failed to select recipes');
+                // Check if we got any recipes
+                if (empty($recipesByMealType)) {
+                    Log::error('No recipes found with fridge items');
                     return null;
                 }
 
-                // Filter recipes to only selected ones
-                $selectedRecipes = array_filter($enrichedRecipes, function($recipe) use ($selectedRecipeIds) {
-                    return in_array($recipe['id'], $selectedRecipeIds);
-                });
-
-                // Reorder recipes according to AI selection (breakfast, lunch, dinner)
-                $orderedRecipes = [];
-                foreach ($selectedRecipeIds as $id) {
-                    foreach ($selectedRecipes as $recipe) {
-                        if ($recipe['id'] === $id) {
-                            $orderedRecipes[] = $recipe;
-                            break;
-                        }
-                    }
-                }
-
-                return $this->createMealPlanFromRecipes($user, $date, $orderedRecipes, $targetCalories);
             } else {
-                // No fridge items - use complex search with nutrition data
-                $recipes = $this->spoonacularService->complexSearch([
-                    'diet' => $preferencesArray['diet_type'] !== 'omnivore' ? $preferencesArray['diet_type'] : null,
-                    'intolerances' => !empty($preferencesArray['allergies']) ? implode(',', $preferencesArray['allergies']) : null,
-                    'number' => 30,
-                    'addRecipeNutrition' => true,
-                    'addRecipeInformation' => true,
-                    'sort' => 'random',
-                    'offset' => rand(0, 100), // Add randomization to avoid same results
-                ]);
+                // === SCENARIO B: User has NO fridge items ===
+                Log::info('Using DIRECT complexSearch strategy (no fridge items)');
 
-                if (isset($recipes['error']) || !isset($recipes['results'])) {
-                    Log::error('Failed to fetch recipes via complex search');
+                $recipesByMealType = $this->fetchRecipesByMealTypes(
+                    $preferencesArray,
+                    $dailyCalories
+                );
+            }
 
-                    // If it's an API limit error, return it with flag
-                    if (isset($recipes['api_limit']) && $recipes['api_limit']) {
-                        return [
-                            'error' => $recipes['error'],
-                            'api_limit' => true
-                        ];
-                    }
-
+            // Check if we have recipes for each meal type
+            foreach (['breakfast', 'lunch', 'dinner'] as $mealType) {
+                if (empty($recipesByMealType[$mealType])) {
+                    Log::error("No recipes found for {$mealType}");
                     return null;
                 }
+            }
 
-                // Transform recipes to standard format with nutrition
-                $formattedRecipes = array_map(function($recipe) {
-                    $calories = 0;
-                    if (isset($recipe['nutrition']['nutrients'])) {
-                        foreach ($recipe['nutrition']['nutrients'] as $nutrient) {
-                            if ($nutrient['name'] === 'Calories') {
-                                $calories = $nutrient['amount'];
-                                break;
-                            }
-                        }
-                    }
+            Log::info('Recipes filtered by meal type', [
+                'breakfast_count' => count($recipesByMealType['breakfast']),
+                'lunch_count' => count($recipesByMealType['lunch']),
+                'dinner_count' => count($recipesByMealType['dinner']),
+            ]);
 
-                    return [
-                        'id' => $recipe['id'],
-                        'title' => $recipe['title'],
-                        'usedIngredients' => [],
-                        'missedIngredients' => [],
-                        'likes' => $recipe['aggregateLikes'] ?? 0,
-                        'calories' => $calories,
-                        'nutrition' => $recipe['nutrition'] ?? [],
-                        'full_recipe_data' => $recipe, // Store complete recipe from complexSearch
-                    ];
-                }, $recipes['results']);
+            // === Use VertexAI to select best recipe for each meal ===
 
-                // Filter recipes by calorie ranges to ensure they fit within daily budget
-                $filteredRecipes = $this->filterRecipesByCalorieRanges($formattedRecipes, $targetCalories);
+            $selectedRecipes = [];
 
-                if (empty($filteredRecipes)) {
-                    Log::warning('No recipes found within calorie ranges, using all formatted recipes');
-                    $filteredRecipes = $formattedRecipes;
-                }
+            foreach (['breakfast', 'lunch', 'dinner'] as $mealType) {
+                $candidates = $recipesByMealType[$mealType];
 
-                // Use VertexAI to select best recipes
-                $selectedRecipeIds = $this->vertexAIService->selectBestRecipes(
-                    $filteredRecipes,
+                // Use AI to select best recipe
+                $selectedIds = $this->vertexAIService->selectBestRecipes(
+                    $candidates,
                     $preferencesArray,
                     $recentRecipeIds,
-                    []
+                    $fridgeItems,
+                    1  // Select only 1 recipe per meal type
                 );
 
-                if (empty($selectedRecipeIds)) {
-                    // Fallback to random 3 recipes for variety
-                    $shuffled = $formattedRecipes;
-                    shuffle($shuffled);
-                    $selectedRecipeIds = array_slice(array_column($shuffled, 'id'), 0, 3);
+                if (empty($selectedIds)) {
+                    // Fallback: random selection
+                    shuffle($candidates);
+                    $selectedRecipe = $candidates[0];
+                } else {
+                    // Find selected recipe
+                    $filtered = array_filter($candidates, fn($r) => $r['id'] === $selectedIds[0]);
+                    $selectedRecipe = !empty($filtered) ? reset($filtered) : $candidates[0];
                 }
 
-                $selectedRecipes = array_filter($formattedRecipes, function($recipe) use ($selectedRecipeIds) {
-                    return in_array($recipe['id'], $selectedRecipeIds);
-                });
-
-                return $this->createMealPlanFromRecipes($user, $date, $selectedRecipes, $targetCalories);
+                $selectedRecipes[] = $selectedRecipe;
             }
+
+            Log::info('Selected final recipes', [
+                'recipe_ids' => array_column($selectedRecipes, 'id'),
+                'recipe_titles' => array_column($selectedRecipes, 'title'),
+                'meal_types' => array_column($selectedRecipes, 'meal_type'),
+                'calories' => array_column($selectedRecipes, 'calories'),
+                'total_calories' => array_sum(array_column($selectedRecipes, 'calories')),
+                'target_calories' => $dailyCalories,
+            ]);
+
+            // Create meal plan from selected recipes
+            return $this->createMealPlanFromRecipes($user, $date, $selectedRecipes, $dailyCalories);
+
         } catch (\Exception $e) {
-            Log::error('Meal Planner Error: ' . $e->getMessage());
+            Log::error('Meal Planner Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
             return null;
         }
     }
@@ -243,6 +191,10 @@ class MealPlannerService
     protected function createMealPlanFromRecipes(User $user, string $date, array $recipes, int $targetCalories): ?MealPlan
     {
         if (empty($recipes) || isset($recipes['error'])) {
+            Log::error('Cannot create meal plan - empty recipes or error', [
+                'recipes_count' => count($recipes),
+                'has_error' => isset($recipes['error'])
+            ]);
             return null;
         }
 
@@ -250,15 +202,22 @@ class MealPlannerService
         $selectedRecipes = array_slice($recipes, 0, 3);
         $selectedRecipes = array_values($selectedRecipes); // Re-index array
 
+        Log::info('Creating meal plan from recipes', [
+            'recipe_count' => count($selectedRecipes),
+            'recipe_ids' => array_column($selectedRecipes, 'id'),
+            'user_id' => $user->id,
+            'date' => $date
+        ]);
+
         // Translate recipe titles from English to Polish using VertexAI
         $recipeTitles = array_map(fn($recipe) => $recipe['title'], $selectedRecipes);
         $translatedTitles = $this->vertexAIService->translateToPolish($recipeTitles);
 
-        // Collect all unique ingredients and steps from all recipes for translation
+        // Collect all unique ingredients and full instructions from all recipes for translation
         $allIngredients = [];
-        $allSteps = [];
+        $allInstructions = [];
         $recipeIngredientMaps = []; // Store which ingredients belong to which recipe
-        $recipeStepMaps = []; // Store which steps belong to which recipe
+        $recipeInstructionsMap = []; // Store which instructions belong to which recipe
 
         for ($recipeIndex = 0; $recipeIndex < count($selectedRecipes); $recipeIndex++) {
             // Update title
@@ -266,12 +225,15 @@ class MealPlannerService
                 $selectedRecipes[$recipeIndex]['title'] = $translatedTitles[$recipeIndex];
             }
 
-            // Ensure recipe has full data
-            $recipeData = $selectedRecipes[$recipeIndex]['full_recipe_data'] ?? null;
-            if (!$recipeData) {
-                $recipeData = $this->spoonacularService->getRecipeInformation($selectedRecipes[$recipeIndex]['id']);
-                $selectedRecipes[$recipeIndex]['full_recipe_data'] = $recipeData;
-            }
+            // ALWAYS fetch full recipe data to ensure we have complete instructions
+            // complexSearch may return incomplete analyzedInstructions even with addRecipeInstructions=true
+            Log::info("Fetching full recipe information for translation", [
+                'recipe_id' => $selectedRecipes[$recipeIndex]['id'],
+                'title' => $selectedRecipes[$recipeIndex]['title']
+            ]);
+
+            $recipeData = $this->spoonacularService->getRecipeInformation($selectedRecipes[$recipeIndex]['id']);
+            $selectedRecipes[$recipeIndex]['full_recipe_data'] = $recipeData;
 
             // Extract ingredient names for translation
             $recipeIngredientMaps[$recipeIndex] = [];
@@ -285,27 +247,45 @@ class MealPlannerService
                 }
             }
 
-            // Extract steps for translation
-            $recipeStepMaps[$recipeIndex] = [];
-            if (isset($recipeData['analyzedInstructions'][0]['steps']) && is_array($recipeData['analyzedInstructions'][0]['steps'])) {
-                foreach ($recipeData['analyzedInstructions'][0]['steps'] as $step) {
-                    if (isset($step['step'])) {
-                        $allSteps[] = $step['step'];
-                        $recipeStepMaps[$recipeIndex][] = count($allSteps) - 1; // Store index
-                    }
-                }
+            // Extract FULL instructions text (not individual steps) for translation
+            Log::info("Checking instructions for recipe", [
+                'recipe_id' => $selectedRecipes[$recipeIndex]['id'],
+                'has_instructions' => isset($recipeData['instructions']),
+                'instructions_length' => isset($recipeData['instructions']) ? strlen($recipeData['instructions']) : 0,
+                'instructions_preview' => isset($recipeData['instructions']) ? substr($recipeData['instructions'], 0, 100) : null
+            ]);
+
+            if (isset($recipeData['instructions']) && !empty($recipeData['instructions'])) {
+                $allInstructions[] = $recipeData['instructions'];
+                $recipeInstructionsMap[$recipeIndex] = count($allInstructions) - 1; // Store index
+            } else {
+                $recipeInstructionsMap[$recipeIndex] = null; // No instructions available
             }
         }
 
-        // Translate all ingredients and steps at once (more efficient)
+        // Translate all ingredients and full instructions at once (more efficient)
+        Log::info('Collected texts for translation', [
+            'total_ingredients' => count($allIngredients),
+            'total_instructions' => count($allInstructions),
+            'sample_ingredients' => array_slice($allIngredients, 0, 3),
+        ]);
+
         $translatedIngredients = [];
         if (!empty($allIngredients)) {
             $translatedIngredients = $this->vertexAIService->translateToPolish($allIngredients);
+            Log::info('Translated ingredients result', [
+                'input_count' => count($allIngredients),
+                'output_count' => count($translatedIngredients)
+            ]);
         }
 
-        $translatedSteps = [];
-        if (!empty($allSteps)) {
-            $translatedSteps = $this->vertexAIService->translateToPolish($allSteps);
+        $translatedInstructions = [];
+        if (!empty($allInstructions)) {
+            $translatedInstructions = $this->vertexAIService->translateToPolish($allInstructions);
+            Log::info('Translated instructions result', [
+                'input_count' => count($allInstructions),
+                'output_count' => count($translatedInstructions)
+            ]);
         }
 
         // Add Polish translations to each recipe's ingredient and step data
@@ -324,25 +304,34 @@ class MealPlannerService
                 }
             }
 
-            // Translate cooking steps
-            if (isset($selectedRecipes[$recipeIndex]['full_recipe_data']['analyzedInstructions'][0]['steps'])) {
-                $stepIndexes = $recipeStepMaps[$recipeIndex] ?? [];
-
-                foreach ($selectedRecipes[$recipeIndex]['full_recipe_data']['analyzedInstructions'][0]['steps'] as $stepIndex => &$step) {
-                    if (isset($stepIndexes[$stepIndex])) {
-                        $globalIndex = $stepIndexes[$stepIndex];
-                        // Add Polish translation to step data
-                        $step['step_pl'] = $translatedSteps[$globalIndex] ?? $step['step'];
-                    }
-                }
+            // Translate full instructions text
+            if (isset($recipeInstructionsMap[$recipeIndex]) && $recipeInstructionsMap[$recipeIndex] !== null) {
+                $globalIndex = $recipeInstructionsMap[$recipeIndex];
+                // Add Polish translation to recipe data
+                $selectedRecipes[$recipeIndex]['full_recipe_data']['instructions_pl'] = $translatedInstructions[$globalIndex] ?? $selectedRecipes[$recipeIndex]['full_recipe_data']['instructions'];
             }
         }
 
-        $mealPlan = MealPlan::create([
-            'user_id' => $user->id,
-            'date' => $date,
-            'total_calories' => 0,
-        ]);
+        try {
+            $mealPlan = MealPlan::create([
+                'user_id' => $user->id,
+                'date' => $date,
+                'total_calories' => 0,
+            ]);
+
+            Log::info('MealPlan created successfully', [
+                'meal_plan_id' => $mealPlan->id,
+                'user_id' => $user->id,
+                'date' => $date
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to create MealPlan', [
+                'error' => $e->getMessage(),
+                'user_id' => $user->id,
+                'date' => $date
+            ]);
+            throw $e;
+        }
 
         $totalCalories = 0;
         $mealTypes = ['breakfast', 'lunch', 'dinner'];
@@ -389,16 +378,24 @@ class MealPlannerService
 
         $mealPlan->update(['total_calories' => $totalCalories]);
 
-        // Validate calorie target
+        // Validate calorie target - strict tolerance of ±20 kcal
         $calorieDeviation = abs($totalCalories - $targetCalories);
         $deviationPercent = ($calorieDeviation / $targetCalories) * 100;
 
-        if ($deviationPercent > 20) {
-            Log::warning("Meal plan calorie deviation exceeds 20%", [
+        if ($calorieDeviation > 20) {
+            Log::warning("Meal plan calorie deviation exceeds ±20 kcal tolerance", [
                 'target_calories' => $targetCalories,
                 'actual_calories' => $totalCalories,
                 'deviation' => $calorieDeviation,
-                'deviation_percent' => round($deviationPercent, 1)
+                'deviation_percent' => round($deviationPercent, 2),
+                'tolerance' => '±20 kcal'
+            ]);
+        } elseif ($calorieDeviation <= 5) {
+            Log::info("Excellent calorie accuracy achieved", [
+                'target_calories' => $targetCalories,
+                'actual_calories' => $totalCalories,
+                'deviation' => $calorieDeviation,
+                'deviation_percent' => round($deviationPercent, 2)
             ]);
         }
 
@@ -437,13 +434,14 @@ class MealPlannerService
      */
     protected function filterRecipesByCalorieRanges(array $recipes, int $targetCalories): array
     {
-        // Define acceptable calorie ranges - wide enough for variety but eliminate extremes
+        // Use VERY PERMISSIVE filtering - only remove extremely low-calorie recipes
+        // We want to give AI maximum flexibility to choose recipes that sum to target
         // Realistic meal ranges:
-        // - Breakfast: 300-900 kcal (12-36% of 2500)
-        // - Lunch: 400-1100 kcal (16-44% of 2500)
-        // - Dinner: 400-1100 kcal (16-44% of 2500)
-        $minCaloriesPerMeal = round($targetCalories * 0.15); // 15% minimum
-        $maxCaloriesPerMeal = round($targetCalories * 0.50); // 50% maximum
+        // - Breakfast: 400-1000 kcal (16-40% of 2500)
+        // - Lunch: 600-1500 kcal (24-60% of 2500)
+        // - Dinner: 600-1500 kcal (24-60% of 2500)
+        $minCaloriesPerMeal = round($targetCalories * 0.20); // 20% minimum (e.g., 500 for 2500)
+        $maxCaloriesPerMeal = round($targetCalories * 0.70); // 70% maximum (e.g., 1750 for 2500) - very permissive!
 
         $filteredRecipes = array_filter($recipes, function($recipe) use ($minCaloriesPerMeal, $maxCaloriesPerMeal) {
             // Skip recipes without calorie data
@@ -451,7 +449,7 @@ class MealPlannerService
                 return false;
             }
 
-            // Only include recipes within the acceptable range
+            // Only filter out extremely low or extremely high calorie recipes
             return $recipe['calories'] >= $minCaloriesPerMeal && $recipe['calories'] <= $maxCaloriesPerMeal;
         });
 
@@ -459,49 +457,421 @@ class MealPlannerService
     }
 
     /**
-     * Enrich recipes with nutrition information from Spoonacular API.
+     * Normalize recipe data from different API sources into unified format.
+     * Handles data from: findByIngredients, complexSearch, and getRecipeInformation.
      *
-     * @param array $recipes
-     * @return array
+     * @param array $recipe Base recipe data
+     * @param array|null $detailedInfo Optional detailed information from getRecipeInformation()
+     * @param string $source 'findByIngredients' or 'complexSearch'
+     * @return array Normalized recipe structure
      */
-    protected function enrichRecipesWithNutrition(array $recipes): array
-    {
-        $enrichedRecipes = [];
+    protected function normalizeRecipeData(
+        array $recipe,
+        ?array $detailedInfo = null,
+        string $source = 'complexSearch'
+    ): array {
+        // Merge base + detailed info
+        $merged = $detailedInfo ? array_merge($recipe, $detailedInfo) : $recipe;
 
-        foreach ($recipes as $recipe) {
-            try {
-                // Get full recipe information including nutrition
-                $recipeInfo = $this->spoonacularService->getRecipeInformation($recipe['id']);
-
-                if (isset($recipeInfo['error'])) {
-                    Log::warning("Failed to get nutrition for recipe {$recipe['id']}");
-                    continue;
+        // Extract calories from nutrition data
+        $calories = 0;
+        if (isset($merged['nutrition']['nutrients'])) {
+            foreach ($merged['nutrition']['nutrients'] as $nutrient) {
+                if ($nutrient['name'] === 'Calories') {
+                    $calories = $nutrient['amount'];
+                    break;
                 }
-
-                // Extract calories from nutrition data
-                $calories = 0;
-                if (isset($recipeInfo['nutrition']['nutrients'])) {
-                    foreach ($recipeInfo['nutrition']['nutrients'] as $nutrient) {
-                        if ($nutrient['name'] === 'Calories') {
-                            $calories = $nutrient['amount'];
-                            break;
-                        }
-                    }
-                }
-
-                // Merge original recipe data with full recipe info and extracted calories
-                $recipe['calories'] = $calories;
-                $recipe['nutrition'] = $recipeInfo['nutrition'] ?? [];
-                $recipe['full_recipe_data'] = $recipeInfo; // Store complete recipe info
-
-                $enrichedRecipes[] = $recipe;
-
-            } catch (\Exception $e) {
-                Log::error("Error enriching recipe {$recipe['id']}: " . $e->getMessage());
-                continue;
             }
         }
 
-        return $enrichedRecipes;
+        // Determine meal type from recipe metadata
+        $mealType = $this->determineMealTypeFromRecipe($merged);
+
+        // Check if has cooking instructions
+        $hasInstructions = !empty($merged['analyzedInstructions'])
+            || !empty($merged['instructions']);
+
+        return [
+            // Basic information
+            'id' => $merged['id'],
+            'title' => $merged['title'],
+            'image' => $merged['image'] ?? null,
+            'readyInMinutes' => $merged['readyInMinutes'] ?? null,
+            'servings' => $merged['servings'] ?? 2,
+            'sourceUrl' => $merged['sourceUrl'] ?? null,
+
+            // Meal type classification
+            'meal_type' => $mealType,
+
+            // Ingredients analysis (from findByIngredients)
+            'usedIngredients' => $merged['usedIngredients'] ?? [],
+            'missedIngredients' => $merged['missedIngredients'] ?? [],
+            'usedIngredientCount' => $merged['usedIngredientCount'] ?? count($merged['usedIngredients'] ?? []),
+            'missedIngredientCount' => $merged['missedIngredientCount'] ?? count($merged['missedIngredients'] ?? []),
+
+            // Extended ingredients (from getRecipeInformation or complexSearch)
+            'extendedIngredients' => $merged['extendedIngredients'] ?? [],
+
+            // Nutrition information
+            'calories' => $calories,
+            'nutrition' => $merged['nutrition'] ?? [],
+
+            // Cooking instructions
+            'analyzedInstructions' => $merged['analyzedInstructions'] ?? [],
+            'hasInstructions' => $hasInstructions,
+
+            // Metadata
+            'likes' => $merged['likes'] ?? $merged['aggregateLikes'] ?? 0,
+            'source' => $source,
+
+            // Full data for database storage
+            'full_recipe_data' => $merged,
+        ];
     }
+
+    /**
+     * Determine meal type from recipe metadata (dishTypes, title, etc.)
+     *
+     * @param array $recipe Recipe data
+     * @return string 'breakfast', 'lunch', 'dinner', or 'snack'
+     */
+    protected function determineMealTypeFromRecipe(array $recipe): string
+    {
+        // Check dishTypes first (most reliable source)
+        if (isset($recipe['dishTypes']) && is_array($recipe['dishTypes'])) {
+            foreach ($recipe['dishTypes'] as $dishType) {
+                $dishType = strtolower($dishType);
+
+                if (in_array($dishType, ['breakfast', 'brunch', 'morning meal'])) {
+                    return 'breakfast';
+                }
+
+                if (in_array($dishType, ['lunch', 'main course', 'main dish'])) {
+                    return 'lunch';
+                }
+
+                if (in_array($dishType, ['dinner'])) {
+                    return 'dinner';
+                }
+
+                if (in_array($dishType, ['snack', 'appetizer', 'fingerfood'])) {
+                    return 'snack';
+                }
+            }
+        }
+
+        // Fallback to title analysis
+        $title = strtolower($recipe['title'] ?? '');
+
+        if (str_contains($title, 'breakfast') || str_contains($title, 'pancake')
+            || str_contains($title, 'oatmeal') || str_contains($title, 'smoothie')) {
+            return 'breakfast';
+        }
+
+        if (str_contains($title, 'dinner') || str_contains($title, 'supper')) {
+            return 'dinner';
+        }
+
+        // Default to lunch for main courses
+        return 'lunch';
+    }
+
+    /**
+     * Fetch recipes using user's fridge items with full details.
+     * Uses complexSearch with includeIngredients for EACH meal type separately.
+     * This ensures proper calorie filtering and meal type classification from the API.
+     *
+     * @param array $fridgeItems User's fridge item names (in Polish)
+     * @param array $preferences User preferences
+     * @param int $dailyCalories Daily calorie target
+     * @return array ['breakfast' => [...], 'lunch' => [...], 'dinner' => [...]]
+     */
+    protected function fetchRecipesWithFridgeItems(
+        array $fridgeItems,
+        array $preferences,
+        int $dailyCalories
+    ): array {
+        // Translate Polish ingredient names to English for Spoonacular API
+        $ingredientsToTranslate = array_slice($fridgeItems, 0, 10); // Limit to 10 ingredients
+
+        Log::info('Translating fridge items to English', [
+            'polish_items' => $ingredientsToTranslate
+        ]);
+
+        // Use VertexAI to translate ingredients to English
+        $translatedIngredients = $this->vertexAIService->translateIngredientsToEnglish($ingredientsToTranslate);
+
+        if (empty($translatedIngredients)) {
+            Log::error('Failed to translate ingredients to English');
+            return [];
+        }
+
+        Log::info('Translated ingredients', [
+            'polish' => $ingredientsToTranslate,
+            'english' => $translatedIngredients
+        ]);
+
+        // Define meal type configurations with calorie ranges
+        $typeMapping = [
+            'breakfast' => [
+                'type' => 'breakfast',
+                'minCalPercent' => 0.20,
+                'maxCalPercent' => 0.35,
+                'maxReadyTime' => 30,
+            ],
+            'lunch' => [
+                'type' => 'main course,soup',
+                'minCalPercent' => 0.30,
+                'maxCalPercent' => 0.45,
+            ],
+            'dinner' => [
+                'type' => 'main course,salad,side dish,soup',
+                'minCalPercent' => 0.20,
+                'maxCalPercent' => 0.35,
+            ],
+        ];
+
+        $recipesByMealType = [
+            'breakfast' => [],
+            'lunch' => [],
+            'dinner' => [],
+        ];
+
+        // Fetch recipes for EACH meal type separately with proper parameters
+        foreach (['breakfast', 'lunch', 'dinner'] as $mealType) {
+            $config = $typeMapping[$mealType];
+
+            // Build parameters for this meal type
+            $params = [
+                'includeIngredients' => implode(',', $translatedIngredients),
+                'type' => $config['type'],
+                'minCalories' => round($dailyCalories * $config['minCalPercent']),
+                'maxCalories' => round($dailyCalories * $config['maxCalPercent']),
+                'number' => 50,
+                'addRecipeNutrition' => 'true',  // Must be string
+                'addRecipeInformation' => 'true', // Must be string
+                'addRecipeInstructions' => 'true', // Must be string
+                'fillIngredients' => 'true', // Must be string - shows which fridge items are used/missed
+                'sort' => 'max-used-ingredients', // Prioritize recipes using fridge items
+            ];
+
+            // Add maxReadyTime for breakfast
+            if (isset($config['maxReadyTime'])) {
+                $params['maxReadyTime'] = $config['maxReadyTime'];
+            }
+
+            // Add diet filter (skip for omnivore)
+            if (isset($preferences['diet_type']) && $preferences['diet_type'] !== 'omnivore') {
+                $dietMapping = [
+                    'vegetarian' => 'vegetarian',
+                    'vegan' => 'vegan',
+                    'keto' => 'ketogenic',
+                ];
+                $params['diet'] = $dietMapping[$preferences['diet_type']] ?? null;
+
+                // Add keto-specific constraints
+                if ($preferences['diet_type'] === 'keto') {
+                    $params['maxCarbs'] = 50;  // Max 50g carbs
+                    $params['minFat'] = 20;    // Min 20g fat
+                }
+            }
+
+            // Add intolerances (allergies)
+            if (!empty($preferences['allergies'])) {
+                $params['intolerances'] = implode(',', $preferences['allergies']);
+            }
+
+            // Add excluded ingredients
+            if (!empty($preferences['exclude_ingredients'])) {
+                $params['excludeIngredients'] = implode(',', $preferences['exclude_ingredients']);
+            }
+
+            Log::info("Fetching {$mealType} recipes with fridge items", [
+                'meal_type' => $mealType,
+                'fridge_items' => $translatedIngredients,
+                'calorie_range' => "{$params['minCalories']}-{$params['maxCalories']} kcal",
+                'type' => $params['type']
+            ]);
+
+            $result = $this->spoonacularService->complexSearch($params);
+
+            if (isset($result['error']) || !isset($result['results'])) {
+                Log::warning("complexSearch with fridge items failed for {$mealType}", [
+                    'error' => $result['error'] ?? 'Unknown error'
+                ]);
+                continue;
+            }
+
+            // Normalize recipes from complexSearch results
+            foreach ($result['results'] as $recipe) {
+                $normalized = $this->normalizeRecipeData($recipe, null, 'complexSearch');
+
+                // Skip recipes without calories (critical data)
+                if ($normalized['calories'] <= 0) {
+                    Log::debug('Skipping recipe without calories', [
+                        'id' => $recipe['id'] ?? 'unknown',
+                        'title' => $recipe['title'] ?? 'unknown',
+                    ]);
+                    continue;
+                }
+
+                // Override meal type with our classification
+                $normalized['meal_type'] = $mealType;
+
+                $recipesByMealType[$mealType][] = $normalized;
+            }
+
+            Log::info("Fetched {$mealType} recipes with fridge items", [
+                'meal_type' => $mealType,
+                'count' => count($recipesByMealType[$mealType]),
+                'avg_calories' => count($recipesByMealType[$mealType]) > 0
+                    ? round(array_sum(array_column($recipesByMealType[$mealType], 'calories')) / count($recipesByMealType[$mealType]))
+                    : 0
+            ]);
+        }
+
+        return $recipesByMealType;
+    }
+
+    /**
+     * Fetch recipes using complexSearch for each meal type separately.
+     * Used when user has no fridge items.
+     *
+     * @param array $preferences User preferences
+     * @param int $dailyCalories Daily calorie target
+     * @return array ['breakfast' => [...], 'lunch' => [...], 'dinner' => [...]]
+     */
+    protected function fetchRecipesByMealTypes(
+        array $preferences,
+        int $dailyCalories
+    ): array {
+        $recipesByMealType = [
+            'breakfast' => [],
+            'lunch' => [],
+            'dinner' => [],
+        ];
+
+        foreach (['breakfast', 'lunch', 'dinner'] as $mealType) {
+            $result = $this->spoonacularService->complexSearchByMealType(
+                $mealType,
+                $dailyCalories,
+                $preferences
+            );
+
+            if (isset($result['error']) || !isset($result['results'])) {
+                Log::error("complexSearch failed for {$mealType}", [
+                    'error' => $result['error'] ?? 'Unknown error'
+                ]);
+                continue;
+            }
+
+            // Normalize recipes from complexSearch results
+            foreach ($result['results'] as $recipe) {
+                $normalized = $this->normalizeRecipeData($recipe, null, 'complexSearch');
+
+                // Skip recipes without calories
+                if ($normalized['calories'] <= 0) {
+                    continue;
+                }
+
+                // Override meal type with our specific classification
+                $normalized['meal_type'] = $mealType;
+
+                $recipesByMealType[$mealType][] = $normalized;
+            }
+
+            Log::info("complexSearch returned recipes for {$mealType}", [
+                'count' => count($recipesByMealType[$mealType]),
+                'avg_calories' => count($recipesByMealType[$mealType]) > 0
+                    ? round(array_sum(array_column($recipesByMealType[$mealType], 'calories')) / count($recipesByMealType[$mealType]))
+                    : 0
+            ]);
+        }
+
+        return $recipesByMealType;
+    }
+
+    /**
+     * Filter recipes for a specific meal type and calorie range.
+     * Used when processing recipes from findByIngredients that need meal type classification.
+     *
+     * @param array $recipes All recipes
+     * @param string $mealType 'breakfast', 'lunch', 'dinner'
+     * @param int $dailyCalories Daily calorie target
+     * @return array Filtered recipes
+     */
+    protected function filterRecipesByMealType(
+        array $recipes,
+        string $mealType,
+        int $dailyCalories
+    ): array {
+        // Define calorie ranges per meal type
+        $ranges = [
+            'breakfast' => ['min' => 0.20, 'max' => 0.35],
+            'lunch' => ['min' => 0.30, 'max' => 0.45],
+            'dinner' => ['min' => 0.20, 'max' => 0.35],
+        ];
+
+        $range = $ranges[$mealType] ?? $ranges['lunch'];
+        $minCal = round($dailyCalories * $range['min']);
+        $maxCal = round($dailyCalories * $range['max']);
+
+        // Define allowed dish types per meal
+        $dishTypes = [
+            'breakfast' => ['breakfast', 'brunch', 'morning meal'],
+            'lunch' => ['main course', 'soup', 'salad', 'main dish'],
+            'dinner' => ['main course', 'salad', 'side dish', 'soup', 'main dish'],
+        ];
+
+        $allowedDishTypes = $dishTypes[$mealType] ?? [];
+
+        // First pass: strict filtering (calorie range + dish types)
+        $strictFiltered = array_filter($recipes, function($recipe) use ($minCal, $maxCal, $allowedDishTypes) {
+            // Check calorie range
+            if ($recipe['calories'] < $minCal || $recipe['calories'] > $maxCal) {
+                return false;
+            }
+
+            // Check dish types if available in recipe data
+            if (isset($recipe['full_recipe_data']['dishTypes'])) {
+                $recipeDishTypes = array_map('strtolower', $recipe['full_recipe_data']['dishTypes']);
+                $matches = array_intersect($recipeDishTypes, $allowedDishTypes);
+
+                if (empty($matches)) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        // If strict filtering gives us enough recipes (at least 5), use those
+        if (count($strictFiltered) >= 5) {
+            Log::info("Strict filtering succeeded for {$mealType}", [
+                'meal_type' => $mealType,
+                'count' => count($strictFiltered)
+            ]);
+            return array_values($strictFiltered);
+        }
+
+        // Second pass: lenient filtering (calorie range only)
+        Log::info("Strict filtering insufficient for {$mealType}, using lenient filtering", [
+            'meal_type' => $mealType,
+            'strict_count' => count($strictFiltered)
+        ]);
+
+        $lenientFiltered = array_filter($recipes, function($recipe) use ($minCal, $maxCal) {
+            // Only check calorie range, ignore dish types
+            return $recipe['calories'] >= $minCal && $recipe['calories'] <= $maxCal;
+        });
+
+        Log::info("Lenient filtering result for {$mealType}", [
+            'meal_type' => $mealType,
+            'count' => count($lenientFiltered),
+            'calorie_range' => "{$minCal}-{$maxCal} kcal"
+        ]);
+
+        return array_values($lenientFiltered);
+    }
+
 }
