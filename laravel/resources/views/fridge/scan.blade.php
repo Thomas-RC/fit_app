@@ -175,8 +175,8 @@
         }">
             <!-- Header -->
             <div class="mb-8">
-                <h1 class="text-3xl font-bold text-gray-900">Scan Your Fridge</h1>
-                <p class="text-gray-600 mt-2">Use AI to automatically detect products from a photo</p>
+                <h1 class="text-3xl font-bold text-gray-900">Zeskanuj lodówkę</h1>
+                <p class="text-gray-600 mt-2">Użyj AI, aby automatycznie wykryć produkty ze zdjęcia</p>
             </div>
 
             <!-- Error Message -->
@@ -190,11 +190,11 @@
             </div>
 
             <!-- State 1: Upload -->
-            <div x-show="state === 'upload'" class="bg-white rounded-lg shadow-lg p-8">
+            <div x-show="state === 'upload'" class="fit-card p-8">
                 <div class="text-center">
                     <div class="text-6xl mb-6">📸</div>
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Upload a Photo</h2>
-                    <p class="text-gray-600 mb-8">Take a photo of your fridge and let AI detect all the products</p>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Prześlij zdjęcie</h2>
+                    <p class="text-gray-600 mb-8">Zrób zdjęcie lodówki, a AI wykryje wszystkie produkty</p>
 
                     <!-- Drop Zone -->
                     <label class="block">
@@ -204,7 +204,7 @@
                             accept="image/jpeg,image/jpg,image/png,image/webp"
                             class="hidden"
                         >
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-12 cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition">
+                        <div class="border-2 border-dashed border-fit-green-500 rounded-lg p-12 cursor-pointer hover:border-fit-green-600 hover:bg-fit-green-50 transition">
                             <div class="text-gray-600">
                                 <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                                     <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>

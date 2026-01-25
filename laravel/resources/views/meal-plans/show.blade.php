@@ -10,7 +10,7 @@
             <!-- Header -->
             <div class="mb-6">
                 <div class="flex items-center justify-between mb-4">
-                    <a href="{{ route('meal-plans.index') }}" class="flex items-center gap-2 text-sm" style="color: #2e8b57; text-decoration: none;">
+                    <a href="{{ route('meal-plans.index') }}" class="flex items-center gap-2 text-sm text-fit-green-600 hover:text-fit-green-700 no-underline">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                         </svg>
@@ -36,7 +36,7 @@
                         <div class="text-xs text-gray-500">Generated {{ $mealPlan->created_at->diffForHumans() }}</div>
                     </div>
                     <div class="text-right">
-                        <span class="total-kcal" style="font-size: 1.5rem; font-weight: bold; color: #2e8b57;">
+                        <span class="total-kcal">
                             Suma dnia: {{ number_format($mealPlan->total_calories) }} kcal
                         </span>
                     </div>
@@ -54,22 +54,22 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div class="nutrition-stat">
                     <div class="nutrition-stat-label">Calories</div>
-                    <div class="nutrition-stat-value" style="color: #2e8b57;">{{ number_format($mealPlan->total_calories) }}</div>
+                    <div class="nutrition-stat-value text-fit-green-600">{{ number_format($mealPlan->total_calories) }}</div>
                     <div class="text-xs text-gray-500">kcal</div>
                 </div>
                 <div class="nutrition-stat">
                     <div class="nutrition-stat-label">Protein</div>
-                    <div class="nutrition-stat-value" style="color: #3b82f6;">{{ number_format($totalProtein) }}</div>
+                    <div class="nutrition-stat-value text-blue-600">{{ number_format($totalProtein) }}</div>
                     <div class="text-xs text-gray-500">grams</div>
                 </div>
                 <div class="nutrition-stat">
                     <div class="nutrition-stat-label">Carbs</div>
-                    <div class="nutrition-stat-value" style="color: #f59e0b;">{{ number_format($totalCarbs) }}</div>
+                    <div class="nutrition-stat-value text-amber-600">{{ number_format($totalCarbs) }}</div>
                     <div class="text-xs text-gray-500">grams</div>
                 </div>
                 <div class="nutrition-stat">
                     <div class="nutrition-stat-label">Fat</div>
-                    <div class="nutrition-stat-value" style="color: #ef4444;">{{ number_format($totalFat) }}</div>
+                    <div class="nutrition-stat-value text-red-600">{{ number_format($totalFat) }}</div>
                     <div class="text-xs text-gray-500">grams</div>
                 </div>
             </div>
@@ -152,7 +152,7 @@
 
                                 <!-- View Full Recipe Link -->
                                 @if(isset($recipeData['sourceUrl']))
-                                    <a href="{{ $recipeData['sourceUrl'] }}" target="_blank" class="inline-flex items-center text-sm font-medium mt-2" style="color: #2e8b57; text-decoration: none;">
+                                    <a href="{{ $recipeData['sourceUrl'] }}" target="_blank" class="inline-flex items-center text-sm font-medium mt-2 text-fit-green-600 hover:text-fit-green-700 no-underline">
                                         Zobacz pełny przepis
                                         <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
@@ -167,7 +167,7 @@
 
             <!-- Actions -->
             <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <a href="{{ route('meal-plans.index') }}" class="btn-fit-secondary text-center" style="text-decoration: none;">
+                <a href="{{ route('meal-plans.index') }}" class="btn-fit-secondary text-center no-underline">
                     Back to All Plans
                 </a>
                 <button onclick="window.print()" class="btn-fit-primary">

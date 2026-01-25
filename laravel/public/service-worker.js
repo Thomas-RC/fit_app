@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fit-ai-dev-nocache';
+const CACHE_NAME = 'fit-ai-v2-' + Date.now();
 const IS_DEVELOPMENT = true; // Set to false in production
 const urlsToCache = [
   '/',

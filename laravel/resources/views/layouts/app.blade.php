@@ -14,8 +14,8 @@
 
     <title>{{ config('app.name', 'FIT AI') }} - @yield('title', 'AI Meal Planner')</title>
 
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vite Assets (includes Tailwind CSS) -->
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -25,16 +25,19 @@
     <meta name="theme-color" content="#3cb371">
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
 
-    <!-- FIT AI Custom Styles -->
-    <link rel="stylesheet" href="{{ asset('css/fit-ai-custom.css') }}?v={{ time() }}">
-
     <style>
+        /* Only keep styles not defined in app.css */
         [x-cloak] { display: none !important; }
+
+        /* Gradient backgrounds */
+        .bg-fit-gradient {
+            background: linear-gradient(135deg, #6dd5a7, #3cb371);
+        }
     </style>
 
     @stack('styles')
 </head>
-<body class="font-sans antialiased" style="background: linear-gradient(135deg, #6dd5a7, #3cb371); min-height: 100vh;">
+<body class="font-sans antialiased bg-fit-gradient min-h-screen">
     <div class="min-h-screen">
         <!-- Navigation -->
         @auth
@@ -44,24 +47,24 @@
                         <div class="flex">
                             <!-- Logo -->
                             <div class="flex-shrink-0 flex items-center">
-                                <a href="{{ route('dashboard') }}" class="text-2xl font-bold" style="color: #3cb371;">
+                                <a href="{{ route('dashboard') }}" class="text-2xl font-bold text-fit-green-500">
                                     🍽️ FIT AI
                                 </a>
                             </div>
 
                             <!-- Navigation Links -->
                             <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-                                <a href="{{ route('dashboard') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('dashboard') ? 'text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium" style="{{ request()->routeIs('dashboard') ? 'border-color: #3cb371;' : '' }}">
-                                    Dashboard
+                                <a href="{{ route('dashboard') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('dashboard') ? 'text-gray-900 border-fit-green-500' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium">
+                                    Panel
                                 </a>
-                                <a href="{{ route('fridge.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('fridge.*') ? 'text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium" style="{{ request()->routeIs('fridge.*') ? 'border-color: #3cb371;' : '' }}">
-                                    My Fridge
+                                <a href="{{ route('fridge.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('fridge.*') ? 'text-gray-900 border-fit-green-500' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium">
+                                    Moja lodówka
                                 </a>
-                                <a href="{{ route('meal-plans.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('meal-plans.*') ? 'text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium" style="{{ request()->routeIs('meal-plans.*') ? 'border-color: #3cb371;' : '' }}">
-                                    Meal Plans
+                                <a href="{{ route('meal-plans.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('meal-plans.*') ? 'text-gray-900 border-fit-green-500' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium">
+                                    Plany posiłków
                                 </a>
-                                <a href="{{ route('preferences.show') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('preferences.*') ? 'text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium" style="{{ request()->routeIs('preferences.*') ? 'border-color: #3cb371;' : '' }}">
-                                    Preferences
+                                <a href="{{ route('preferences.show') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('preferences.*') ? 'text-gray-900 border-fit-green-500' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium">
+                                    Preferencje
                                 </a>
                             </div>
                         </div>
@@ -85,7 +88,7 @@
                                                 <svg class="w-4 h-4 mr-2 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                                                 </svg>
-                                                Admin Settings
+                                                Ustawienia administratora
                                             </a>
                                         @endif
                                     </div>
@@ -96,7 +99,7 @@
                                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                                                 </svg>
-                                                Logout
+                                                Wyloguj
                                             </button>
                                         </form>
                                     </div>
@@ -158,6 +161,7 @@
     @stack('scripts')
 
     <!-- Service Worker Registration -->
+    @if(config('app.env') !== 'local')
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -171,5 +175,18 @@
             });
         }
     </script>
+    @else
+    <script>
+        // Unregister service worker in development
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                    console.log('Service Worker unregistered');
+                }
+            });
+        }
+    </script>
+    @endif
 </body>
 </html>

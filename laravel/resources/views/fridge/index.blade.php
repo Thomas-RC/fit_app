@@ -38,48 +38,48 @@
         <!-- Header -->
         <div class="flex justify-between items-center mb-8">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900">My Fridge</h1>
-                <p class="text-gray-600 mt-2">Track your ingredients and their expiration dates</p>
+                <h1 class="text-3xl font-bold text-gray-900">Moja lodówka</h1>
+                <p class="text-gray-600 mt-2">Śledź składniki i ich daty ważności</p>
             </div>
             <div class="flex gap-3">
-                <a href="{{ route('fridge.scan') }}" class="inline-flex items-center px-4 py-2 border border-emerald-500 text-emerald-600 rounded-md hover:bg-emerald-50">
-                    📸 Scan Fridge
+                <a href="{{ route('fridge.scan') }}" class="btn-fit-secondary">
+                    📸 Zeskanuj lodówkę
                 </a>
-                <a href="{{ route('fridge.create') }}" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-md hover:shadow-lg transition font-semibold">
-                    + Add Item
+                <a href="{{ route('fridge.create') }}" class="btn-fit-primary">
+                    + Dodaj produkt
                 </a>
             </div>
         </div>
 
         <!-- Success Message -->
         @if(session('success'))
-            <div class="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg">
+            <div class="mb-6 p-4 bg-fit-green-50 border border-fit-green-200 text-fit-green-700 rounded-lg">
                 {{ session('success') }}
             </div>
         @endif
 
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="text-sm text-gray-600">Total Items</div>
-                <div class="text-3xl font-bold text-gray-900 mt-1">{{ $totalItems }}</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="fit-card p-6 text-center">
+                <div class="text-sm text-gray-600 uppercase tracking-wide">Produkty</div>
+                <div class="text-3xl font-bold text-fit-green-600 mt-1">{{ $totalItems }}</div>
             </div>
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="text-sm text-gray-600">Fresh</div>
+            <div class="fit-card p-6 text-center">
+                <div class="text-sm text-gray-600 uppercase tracking-wide">Świeże</div>
                 <div class="text-3xl font-bold text-green-600 mt-1">{{ $fresh }}</div>
             </div>
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="text-sm text-gray-600">Expiring Soon</div>
+            <div class="fit-card p-6 text-center">
+                <div class="text-sm text-gray-600 uppercase tracking-wide">Wygasają</div>
                 <div class="text-3xl font-bold text-amber-600 mt-1">{{ $expiringSoon }}</div>
             </div>
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="text-sm text-gray-600">Expired</div>
+            <div class="fit-card p-6 text-center">
+                <div class="text-sm text-gray-600 uppercase tracking-wide">Przeterminowane</div>
                 <div class="text-3xl font-bold text-red-600 mt-1">{{ $expired }}</div>
             </div>
         </div>
 
         <!-- Filters & Search -->
-        <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <div class="fit-card p-6 mb-6">
             <div class="flex flex-col md:flex-row gap-4">
                 <!-- Search -->
                 <div class="flex-1">
@@ -95,31 +95,31 @@
                 <div class="flex gap-2">
                     <button
                         @click="filter = 'all'"
-                        :class="filter === 'all' ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-700'"
-                        class="px-4 py-2 rounded-md hover:bg-emerald-600 hover:text-white transition"
+                        :class="filter === 'all' ? 'bg-fit-green-500 text-white' : 'bg-gray-100 text-gray-700'"
+                        class="px-4 py-2 rounded-lg hover:bg-fit-green-600 hover:text-white transition"
                     >
-                        All
+                        Wszystko
                     </button>
                     <button
                         @click="filter = 'fresh'"
                         :class="filter === 'fresh' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700'"
-                        class="px-4 py-2 rounded-md hover:bg-green-600 hover:text-white transition"
+                        class="px-4 py-2 rounded-lg hover:bg-green-600 hover:text-white transition"
                     >
-                        Fresh
+                        Świeże
                     </button>
                     <button
                         @click="filter = 'expiring'"
                         :class="filter === 'expiring' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700'"
-                        class="px-4 py-2 rounded-md hover:bg-amber-600 hover:text-white transition"
+                        class="px-4 py-2 rounded-lg hover:bg-amber-600 hover:text-white transition"
                     >
-                        Expiring
+                        Wygasają
                     </button>
                     <button
                         @click="filter = 'expired'"
                         :class="filter === 'expired' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-700'"
-                        class="px-4 py-2 rounded-md hover:bg-red-600 hover:text-white transition"
+                        class="px-4 py-2 rounded-lg hover:bg-red-600 hover:text-white transition"
                     >
-                        Expired
+                        Przeterminowane
                     </button>
                 </div>
 
@@ -127,17 +127,17 @@
                 <div class="flex gap-2 border-l pl-4">
                     <button
                         @click="view = 'grid'"
-                        :class="view === 'grid' ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-700'"
-                        class="px-3 py-2 rounded-md"
+                        :class="view === 'grid' ? 'bg-fit-green-500 text-white' : 'bg-gray-100 text-gray-700'"
+                        class="px-3 py-2 rounded-lg"
                     >
-                        Grid
+                        Siatka
                     </button>
                     <button
                         @click="view = 'list'"
-                        :class="view === 'list' ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-700'"
-                        class="px-3 py-2 rounded-md"
+                        :class="view === 'list' ? 'bg-fit-green-500 text-white' : 'bg-gray-100 text-gray-700'"
+                        class="px-3 py-2 rounded-lg"
                     >
-                        List
+                        Lista
                     </button>
                 </div>
             </div>
@@ -148,7 +148,7 @@
             <!-- Grid View -->
             <div x-show="view === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <template x-for="item in filteredItems" :key="item.id">
-                    <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
+                    <div class="fit-card p-6 hover:shadow-2xl transition">
                         <!-- Status Badge -->
                         <div class="mb-3">
                             <span
@@ -213,7 +213,7 @@
             </div>
 
             <!-- List View -->
-            <div x-show="view === 'list'" class="bg-white rounded-lg shadow overflow-hidden">
+            <div x-show="view === 'list'" class="fit-card overflow-hidden">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -285,22 +285,22 @@
         </div>
 
         <!-- Empty State -->
-        <div x-show="filteredItems.length === 0" class="bg-white rounded-lg shadow p-12 text-center">
+        <div x-show="filteredItems.length === 0" class="fit-card p-12 text-center">
             <div class="text-6xl mb-4">🍽️</div>
             <h3 class="text-xl font-semibold text-gray-900 mb-2">
-                <span x-show="search || filter !== 'all'">No items match your filters</span>
-                <span x-show="!search && filter === 'all'">Your fridge is empty</span>
+                <span x-show="search || filter !== 'all'">Brak produktów pasujących do filtrów</span>
+                <span x-show="!search && filter === 'all'">Twoja lodówka jest pusta</span>
             </h3>
             <p class="text-gray-600 mb-6">
-                <span x-show="search || filter !== 'all'">Try adjusting your search or filters</span>
-                <span x-show="!search && filter === 'all'">Start adding ingredients to track their expiration dates</span>
+                <span x-show="search || filter !== 'all'">Spróbuj zmienić wyszukiwanie lub filtry</span>
+                <span x-show="!search && filter === 'all'">Zacznij dodawać składniki, aby śledzić ich daty ważności</span>
             </p>
             <div class="flex gap-3 justify-center">
-                <a href="{{ route('fridge.scan') }}" class="inline-flex items-center px-4 py-2 border border-emerald-500 text-emerald-600 rounded-md hover:bg-emerald-50">
-                    📸 Scan Fridge
+                <a href="{{ route('fridge.scan') }}" class="btn-fit-secondary">
+                    📸 Zeskanuj lodówkę
                 </a>
-                <a href="{{ route('fridge.create') }}" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-md hover:shadow-lg transition font-semibold">
-                    + Add Item
+                <a href="{{ route('fridge.create') }}" class="btn-fit-primary">
+                    + Dodaj produkt
                 </a>
             </div>
         </div>

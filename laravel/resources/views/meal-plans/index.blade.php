@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'My Meal Plans')
+@section('title', 'Moje plany posiłków')
 
 @section('content')
 <div class="py-12">
@@ -8,17 +8,17 @@
         <!-- Header -->
         <div class="flex justify-between items-center mb-8">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900">My Meal Plans</h1>
-                <p class="text-gray-600 mt-2">View and manage your AI-generated meal plans</p>
+                <h1 class="text-3xl font-bold text-gray-900">Moje plany posiłków</h1>
+                <p class="text-gray-600 mt-2">Przeglądaj i zarządzaj planami posiłków wygenerowanymi przez AI</p>
             </div>
-            <a href="{{ route('meal-plans.create') }}" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-md hover:shadow-lg transition font-semibold">
-                ✨ Generate New Plan
+            <a href="{{ route('meal-plans.create') }}" class="btn-fit-primary">
+                ✨ Generuj nowy plan
             </a>
         </div>
 
         <!-- Success Message -->
         @if(session('success'))
-            <div class="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg">
+            <div class="mb-6 p-4 bg-fit-green-50 border border-fit-green-200 text-fit-green-700 rounded-lg">
                 {{ session('success') }}
             </div>
         @endif
@@ -27,16 +27,16 @@
             <!-- Meal Plans Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 @foreach($mealPlans as $plan)
-                    <div class="bg-white rounded-lg shadow hover:shadow-lg transition overflow-hidden">
+                    <div class="fit-card hover:shadow-2xl transition overflow-hidden">
                         <!-- Header -->
-                        <div class="bg-gradient-to-r from-emerald-500 to-teal-600 p-6 text-white">
+                        <div class="bg-gradient-to-r from-fit-green-500 to-green-600 p-6 text-white">
                             <div class="flex justify-between items-start mb-2">
                                 <div>
                                     <div class="text-sm opacity-90">{{ $plan->date->format('l') }}</div>
-                                    <div class="text-2xl font-bold">{{ $plan->date->format('M j, Y') }}</div>
+                                    <div class="text-2xl font-bold">{{ $plan->date->format('j M Y') }}</div>
                                 </div>
                                 <div class="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2">
-                                    <div class="text-xs opacity-90">Total</div>
+                                    <div class="text-xs opacity-90">Suma</div>
                                     <div class="text-lg font-bold">{{ number_format($plan->total_calories) }} kcal</div>
                                 </div>
                             </div>
@@ -68,13 +68,13 @@
 
                             <!-- Stats -->
                             <div class="flex items-center justify-between text-sm text-gray-600 mb-4 pt-4 border-t">
-                                <span>{{ $plan->recipes->count() }} meals</span>
-                                <span>Created {{ $plan->created_at->diffForHumans() }}</span>
+                                <span>{{ $plan->recipes->count() }} {{ $plan->recipes->count() === 1 ? 'posiłek' : ($plan->recipes->count() < 5 ? 'posiłki' : 'posiłków') }}</span>
+                                <span>Utworzono {{ $plan->created_at->diffForHumans() }}</span>
                             </div>
 
                             <!-- Action -->
-                            <a href="{{ route('meal-plans.show', $plan) }}" class="block w-full text-center px-4 py-2 bg-emerald-50 text-emerald-700 rounded-md hover:bg-emerald-100 transition font-medium">
-                                View Details
+                            <a href="{{ route('meal-plans.show', $plan) }}" class="block w-full text-center px-4 py-2 bg-fit-green-50 text-fit-green-700 rounded-md hover:bg-fit-green-100 transition font-medium">
+                                Zobacz szczegóły
                             </a>
                         </div>
                     </div>
@@ -87,12 +87,12 @@
             </div>
         @else
             <!-- Empty State -->
-            <div class="bg-white rounded-lg shadow p-12 text-center">
+            <div class="fit-card p-12 text-center">
                 <div class="text-6xl mb-4">🍽️</div>
-                <h3 class="text-xl font-semibold text-gray-900 mb-2">No Meal Plans Yet</h3>
-                <p class="text-gray-600 mb-6">Generate your first AI-powered meal plan tailored to your preferences and fridge contents</p>
-                <a href="{{ route('meal-plans.create') }}" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-md hover:shadow-lg transition font-semibold">
-                    ✨ Generate Your First Plan
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">Nie masz jeszcze planów posiłków</h3>
+                <p class="text-gray-600 mb-6">Wygeneruj swój pierwszy plan posiłków oparty na AI, dostosowany do twoich preferencji i zawartości lodówki</p>
+                <a href="{{ route('meal-plans.create') }}" class="btn-fit-primary">
+                    ✨ Generuj swój pierwszy plan
                 </a>
             </div>
         @endif

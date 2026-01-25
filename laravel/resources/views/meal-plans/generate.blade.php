@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Generate Meal Plan')
+@section('title', 'Generuj plan posiłków')
 
 @section('content')
 <div class="py-12">
@@ -10,11 +10,11 @@
             date: '',
             generating: false,
             progress: 0,
-            progressMessage: 'Initializing...',
+            progressMessage: 'Inicjalizacja...',
 
             nextStep() {
                 if (this.step === 1 && !this.date) {
-                    alert('Please select a date');
+                    alert('Proszę wybrać datę');
                     return;
                 }
                 if (this.step < 3) {
@@ -31,7 +31,7 @@
             async generate() {
                 this.generating = true;
                 this.progress = 0;
-                this.progressMessage = 'Analyzing your fridge...';
+                this.progressMessage = 'Analizowanie lodówki...';
                 this.animateProgress(30, 2000);
 
                 try {
@@ -39,7 +39,7 @@
                     formData.append('date', this.date);
                     formData.append('_token', '{{ csrf_token() }}');
 
-                    this.progressMessage = 'Finding perfect recipes...';
+                    this.progressMessage = 'Szukanie idealnych przepisów...';
                     this.animateProgress(60, 3000);
 
                     const response = await fetch('{{ route('meal-plans.generate') }}', {
@@ -47,22 +47,22 @@
                         body: formData
                     });
 
-                    this.progressMessage = 'Calculating nutrition...';
+                    this.progressMessage = 'Obliczanie wartości odżywczych...';
                     this.animateProgress(90, 1000);
 
                     if (response.redirected) {
                         this.progress = 100;
-                        this.progressMessage = 'Done!';
+                        this.progressMessage = 'Gotowe!';
                         window.location.href = response.url;
                     } else {
                         const text = await response.text();
                         console.error('Generation failed:', text);
-                        alert('Failed to generate meal plan. Please try again.');
+                        alert('Nie udało się wygenerować planu posiłków. Spróbuj ponownie.');
                         this.generating = false;
                     }
                 } catch (error) {
                     console.error('Error:', error);
-                    alert('An error occurred. Please try again.');
+                    alert('Wystąpił błąd. Spróbuj ponownie.');
                     this.generating = false;
                 }
             },
@@ -86,14 +86,14 @@
         }">
             <!-- Header -->
             <div class="mb-8">
-                <a href="{{ route('meal-plans.index') }}" class="text-emerald-600 hover:text-emerald-700 flex items-center gap-2 mb-4">
+                <a href="{{ route('meal-plans.index') }}" class="text-fit-green-600 hover:text-fit-green-700 flex items-center gap-2 mb-4">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                     </svg>
-                    Back to Meal Plans
+                    Powrót do planów posiłków
                 </a>
-                <h1 class="text-3xl font-bold text-gray-900">Generate Meal Plan</h1>
-                <p class="text-gray-600 mt-2">AI-powered meal planning based on your preferences and fridge contents</p>
+                <h1 class="text-3xl font-bold text-gray-900">Generuj plan posiłków</h1>
+                <p class="text-gray-600 mt-2">Planowanie posiłków oparte na AI, dostosowane do twoich preferencji i zawartości lodówki</p>
             </div>
 
             <!-- Error Message -->
@@ -108,92 +108,92 @@
                 <div class="flex items-center justify-between">
                     <div class="flex-1 flex items-center">
                         <div class="flex items-center justify-center w-10 h-10 rounded-full text-white font-semibold"
-                            :class="step >= 1 ? 'bg-emerald-600' : 'bg-gray-300'">
+                            :class="step >= 1 ? 'bg-fit-green-600' : 'bg-gray-300'">
                             1
                         </div>
                         <div class="flex-1 h-1 mx-2"
-                            :class="step > 1 ? 'bg-emerald-600' : 'bg-gray-300'">
+                            :class="step > 1 ? 'bg-fit-green-600' : 'bg-gray-300'">
                         </div>
                     </div>
                     <div class="flex-1 flex items-center">
                         <div class="flex items-center justify-center w-10 h-10 rounded-full text-white font-semibold"
-                            :class="step >= 2 ? 'bg-emerald-600' : 'bg-gray-300'">
+                            :class="step >= 2 ? 'bg-fit-green-600' : 'bg-gray-300'">
                             2
                         </div>
                         <div class="flex-1 h-1 mx-2"
-                            :class="step > 2 ? 'bg-emerald-600' : 'bg-gray-300'">
+                            :class="step > 2 ? 'bg-fit-green-600' : 'bg-gray-300'">
                         </div>
                     </div>
                     <div class="flex items-center justify-center w-10 h-10 rounded-full text-white font-semibold"
-                        :class="step >= 3 ? 'bg-emerald-600' : 'bg-gray-300'">
+                        :class="step >= 3 ? 'bg-fit-green-600' : 'bg-gray-300'">
                         3
                     </div>
                 </div>
                 <div class="flex justify-between mt-2 text-sm text-gray-600">
-                    <span>Select Date</span>
-                    <span>Review Settings</span>
-                    <span>Confirm</span>
+                    <span>Wybierz datę</span>
+                    <span>Sprawdź ustawienia</span>
+                    <span>Potwierdź</span>
                 </div>
             </div>
 
             <!-- Step 1: Date Selection -->
-            <div x-show="step === 1" class="bg-white rounded-lg shadow-lg p-8">
+            <div x-show="step === 1" class="fit-card p-8">
                 <div class="text-center mb-8">
                     <div class="text-5xl mb-4">📅</div>
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Select a Date</h2>
-                    <p class="text-gray-600">Choose the date for your meal plan</p>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Wybierz datę</h2>
+                    <p class="text-gray-600">Wybierz datę dla swojego planu posiłków</p>
                 </div>
 
                 <div class="max-w-md mx-auto mb-8">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Data</label>
                     <input
                         type="date"
                         x-model="date"
                         min="{{ date('Y-m-d') }}"
-                        class="w-full border border-gray-300 rounded-md px-4 py-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-lg"
+                        class="w-full border border-gray-300 rounded-md px-4 py-3 focus:ring-2 focus:ring-fit-green-500 focus:border-fit-green-500 text-lg"
                         required
                     >
                     <p class="text-sm text-gray-500 mt-2" x-show="date">
-                        Plan will be generated for <strong x-text="new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })"></strong>
+                        Plan zostanie wygenerowany na <strong x-text="new Date(date + 'T00:00:00').toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })"></strong>
                     </p>
                 </div>
 
                 <div class="flex justify-end">
                     <button
                         @click="nextStep"
-                        class="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-md hover:shadow-lg transition font-semibold"
+                        class="btn-fit-primary"
                     >
-                        Continue
+                        Kontynuuj
                     </button>
                 </div>
             </div>
 
             <!-- Step 2: Review Settings -->
-            <div x-show="step === 2" x-cloak class="bg-white rounded-lg shadow-lg p-8">
+            <div x-show="step === 2" x-cloak class="fit-card p-8">
                 <div class="text-center mb-8">
                     <div class="text-5xl mb-4">⚙️</div>
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Review Your Settings</h2>
-                    <p class="text-gray-600">Make sure everything looks good</p>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Sprawdź ustawienia</h2>
+                    <p class="text-gray-600">Upewnij się, że wszystko wygląda dobrze</p>
                 </div>
 
                 <div class="space-y-4 mb-8">
                     <!-- Fridge Items -->
                     <div class="border border-gray-200 rounded-lg p-6">
                         <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-lg font-semibold text-gray-900">Fridge Contents</h3>
-                            <a href="{{ route('fridge.index') }}" class="text-sm text-emerald-600 hover:text-emerald-700">Edit</a>
+                            <h3 class="text-lg font-semibold text-gray-900">Zawartość lodówki</h3>
+                            <a href="{{ route('fridge.index') }}" class="text-sm text-fit-green-600 hover:text-fit-green-700">Edytuj</a>
                         </div>
                         <div class="flex items-center gap-3">
                             <div class="text-3xl">🥗</div>
                             <div>
                                 <div class="text-2xl font-bold text-gray-900">{{ $fridgeItemsCount }}</div>
-                                <div class="text-sm text-gray-600">items in fridge</div>
+                                <div class="text-sm text-gray-600">produktów w lodówce</div>
                             </div>
                         </div>
                         @if($fridgeItemsCount === 0)
                             <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
                                 <p class="text-sm text-amber-700">
-                                    <strong>Tip:</strong> Add items to your fridge for more personalized meal suggestions!
+                                    <strong>Wskazówka:</strong> Dodaj produkty do lodówki, aby otrzymać bardziej spersonalizowane sugestie posiłków!
                                 </p>
                             </div>
                         @endif
@@ -202,16 +202,16 @@
                     <!-- Preferences -->
                     <div class="border border-gray-200 rounded-lg p-6">
                         <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-lg font-semibold text-gray-900">Dietary Preferences</h3>
-                            <a href="{{ route('preferences.show') }}" class="text-sm text-emerald-600 hover:text-emerald-700">Edit</a>
+                            <h3 class="text-lg font-semibold text-gray-900">Preferencje żywieniowe</h3>
+                            <a href="{{ route('preferences.show') }}" class="text-sm text-fit-green-600 hover:text-fit-green-700">Edytuj</a>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <div class="text-sm text-gray-600">Diet Type</div>
+                                <div class="text-sm text-gray-600">Typ diety</div>
                                 <div class="font-semibold text-gray-900 capitalize">{{ $preferences->diet_type ?? 'omnivore' }}</div>
                             </div>
                             <div>
-                                <div class="text-sm text-gray-600">Daily Calories</div>
+                                <div class="text-sm text-gray-600">Dzienne kalorie</div>
                                 <div class="font-semibold text-gray-900">{{ $preferences->daily_calories ?? 2000 }} kcal</div>
                             </div>
                         </div>
@@ -223,38 +223,38 @@
                         @click="prevStep"
                         class="flex-1 px-6 py-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
                     >
-                        Back
+                        Wstecz
                     </button>
                     <button
                         @click="nextStep"
-                        class="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-md hover:shadow-lg transition font-semibold"
+                        class="flex-1 btn-fit-primary"
                     >
-                        Continue
+                        Kontynuuj
                     </button>
                 </div>
             </div>
 
             <!-- Step 3: Confirmation -->
-            <div x-show="step === 3 && !generating" x-cloak class="bg-white rounded-lg shadow-lg p-8">
+            <div x-show="step === 3 && !generating" x-cloak class="fit-card p-8">
                 <div class="text-center mb-8">
                     <div class="text-6xl mb-4">✨</div>
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Ready to Generate!</h2>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Gotowe do wygenerowania!</h2>
                     <p class="text-gray-600 mb-6">
-                        Your personalized meal plan will be created using AI technology
+                        Twój spersonalizowany plan posiłków zostanie stworzony przy użyciu technologii AI
                     </p>
 
                     <div class="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-8">
                         <div class="text-center">
                             <div class="text-3xl mb-2">📸</div>
-                            <div class="text-sm text-gray-600">Uses your fridge contents</div>
+                            <div class="text-sm text-gray-600">Wykorzystuje zawartość lodówki</div>
                         </div>
                         <div class="text-center">
                             <div class="text-3xl mb-2">🎯</div>
-                            <div class="text-sm text-gray-600">Matches your diet preferences</div>
+                            <div class="text-sm text-gray-600">Dopasowany do twoich preferencji</div>
                         </div>
                         <div class="text-center">
                             <div class="text-3xl mb-2">📊</div>
-                            <div class="text-sm text-gray-600">Meets calorie goals</div>
+                            <div class="text-sm text-gray-600">Spełnia cele kaloryczne</div>
                         </div>
                     </div>
                 </div>
@@ -264,43 +264,43 @@
                         @click="prevStep"
                         class="flex-1 px-6 py-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
                     >
-                        Back
+                        Wstecz
                     </button>
                     <button
                         @click="generate"
-                        class="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-md hover:shadow-lg transition font-semibold"
+                        class="flex-1 btn-fit-primary"
                     >
-                        ✨ Generate Meal Plan
+                        ✨ Generuj plan posiłków
                     </button>
                 </div>
             </div>
 
             <!-- Generating State -->
-            <div x-show="generating" x-cloak class="bg-white rounded-lg shadow-lg p-12">
+            <div x-show="generating" x-cloak class="fit-card p-12">
                 <div class="text-center">
                     <div class="mb-8">
                         <!-- Spinner -->
-                        <svg class="animate-spin h-16 w-16 mx-auto text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg class="animate-spin h-16 w-16 mx-auto text-fit-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                     </div>
 
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Generating Your Meal Plan...</h2>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Generowanie planu posiłków...</h2>
                     <p class="text-gray-600 mb-8" x-text="progressMessage"></p>
 
                     <!-- Progress Bar -->
                     <div class="max-w-md mx-auto mb-4">
                         <div class="bg-gray-200 rounded-full h-4 overflow-hidden">
                             <div
-                                class="bg-gradient-to-r from-emerald-500 to-teal-600 h-full rounded-full transition-all duration-300"
+                                class="bg-fit-green-600 h-full rounded-full transition-all duration-300"
                                 :style="`width: ${progress}%`"
                             ></div>
                         </div>
                         <p class="text-sm text-gray-500 mt-2" x-text="`${Math.round(progress)}%`"></p>
                     </div>
 
-                    <p class="text-sm text-gray-500">This usually takes 10-15 seconds</p>
+                    <p class="text-sm text-gray-500">Zazwyczaj zajmuje to 10-15 sekund</p>
                 </div>
             </div>
         </div>
