@@ -1,12 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'My Fridge')
+@section('title', 'Moja lodówka')
 
 @section('content')
 <div class="py-12" x-data="{
     view: 'grid',
     filter: 'all',
     search: '',
+    selectedItems: [],
     items: {{ Js::from($items->map(fn($item) => [
         'id' => $item->id,
         'product_name' => $item->product_name,
@@ -32,6 +33,23 @@
 
             return true;
         });
+    },
+    get allSelected() {
+        return this.filteredItems.length > 0 && this.filteredItems.every(item => this.selectedItems.includes(item.id));
+    },
+    toggleAll() {
+        if (this.allSelected) {
+            this.selectedItems = [];
+        } else {
+            this.selectedItems = this.filteredItems.map(item => item.id);
+        }
+    },
+    toggleItem(itemId) {
+        if (this.selectedItems.includes(itemId)) {
+            this.selectedItems = this.selectedItems.filter(id => id !== itemId);
+        } else {
+            this.selectedItems.push(itemId);
+        }
     }
 }">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -42,6 +60,39 @@
                 <p class="text-gray-600 mt-2">Śledź składniki i ich daty ważności</p>
             </div>
             <div class="flex gap-3">
+                <!-- Delete Actions (shown when items exist) -->
+                @if($totalItems > 0)
+                    <button
+                        x-show="selectedItems.length > 0"
+                        @click="if(confirm('Czy na pewno chcesz usunąć zaznaczone produkty?')) {
+                            const form = document.getElementById('delete-selected-form');
+                            selectedItems.forEach(id => {
+                                const input = document.createElement('input');
+                                input.type = 'hidden';
+                                input.name = 'selected_items[]';
+                                input.value = id;
+                                form.appendChild(input);
+                            });
+                            form.submit();
+                        }"
+                        class="btn-fit-danger"
+                    >
+                        🗑️ Usuń zaznaczone (<span x-text="selectedItems.length"></span>)
+                    </button>
+
+                    <form id="delete-all-form" action="{{ route('fridge.delete-all') }}" method="POST" class="inline">
+                        @csrf
+                        @method('DELETE')
+                        <button
+                            type="submit"
+                            onclick="return confirm('Czy na pewno chcesz usunąć wszystkie produkty z lodówki?')"
+                            class="btn-fit-danger"
+                        >
+                            🗑️ Usuń wszystko
+                        </button>
+                    </form>
+                @endif
+
                 <a href="{{ route('fridge.scan') }}" class="btn-fit-secondary">
                     📸 Zeskanuj lodówkę
                 </a>
@@ -50,6 +101,11 @@
                 </a>
             </div>
         </div>
+
+        <!-- Hidden form for delete selected -->
+        <form id="delete-selected-form" action="{{ route('fridge.delete-selected') }}" method="POST" style="display: none;">
+            @csrf
+        </form>
 
         <!-- Success Message -->
         @if(session('success'))
@@ -86,8 +142,8 @@
                     <input
                         type="text"
                         x-model="search"
-                        placeholder="Search products..."
-                        class="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        placeholder="Szukaj produktów..."
+                        class="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-fit-green-500 focus:border-fit-green-500"
                     >
                 </div>
 
@@ -148,43 +204,53 @@
             <!-- Grid View -->
             <div x-show="view === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <template x-for="item in filteredItems" :key="item.id">
-                    <div class="fit-card p-6 hover:shadow-2xl transition">
+                    <div class="fit-card p-6 hover:shadow-2xl transition relative">
+                        <!-- Checkbox -->
+                        <div class="absolute top-4 right-4">
+                            <input
+                                type="checkbox"
+                                :checked="selectedItems.includes(item.id)"
+                                @change="toggleItem(item.id)"
+                                class="w-5 h-5 text-fit-green-600 border-gray-300 rounded focus:ring-fit-green-500"
+                            >
+                        </div>
+
                         <!-- Status Badge -->
                         <div class="mb-3">
                             <span
                                 x-show="item.is_expired"
                                 class="inline-block px-3 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded-full"
                             >
-                                Expired
+                                Przeterminowane
                             </span>
                             <span
                                 x-show="item.is_expiring_soon && !item.is_expired"
                                 class="inline-block px-3 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full"
                             >
-                                Expiring Soon
+                                Wygasa wkrótce
                             </span>
                             <span
                                 x-show="item.is_fresh"
                                 class="inline-block px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full"
                             >
-                                Fresh
+                                Świeże
                             </span>
                         </div>
 
                         <!-- Product Name -->
-                        <h3 class="text-xl font-semibold text-gray-900 mb-2" x-text="item.product_name"></h3>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2 pr-8" x-text="item.product_name"></h3>
 
                         <!-- Quantity -->
                         <p class="text-gray-600 mb-4">
-                            <span x-text="item.quantity || 'N/A'"></span>
+                            <span x-text="item.quantity || 'Brak'"></span>
                             <span x-text="item.unit || ''"></span>
                         </p>
 
                         <!-- Dates -->
                         <div class="text-sm text-gray-500 mb-4 space-y-1">
-                            <div>Added: <span x-text="item.added_at"></span></div>
+                            <div>Dodano: <span x-text="item.added_at"></span></div>
                             <div x-show="item.expires_at">
-                                Expires: <span x-text="item.expires_at"></span>
+                                Wygasa: <span x-text="item.expires_at"></span>
                             </div>
                         </div>
 
@@ -194,17 +260,17 @@
                                 :href="`/fridge/${item.id}/edit`"
                                 class="flex-1 text-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                             >
-                                Edit
+                                Edytuj
                             </a>
                             <form :action="`/fridge/${item.id}`" method="POST" class="flex-1">
                                 @csrf
                                 @method('DELETE')
                                 <button
                                     type="submit"
-                                    onclick="return confirm('Are you sure you want to delete this item?')"
+                                    onclick="return confirm('Czy na pewno chcesz usunąć ten produkt?')"
                                     class="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
                                 >
-                                    Delete
+                                    Usuń
                                 </button>
                             </form>
                         </div>
@@ -217,17 +283,33 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Added</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires</th>
+                            <th class="px-6 py-3 text-left">
+                                <input
+                                    type="checkbox"
+                                    :checked="allSelected"
+                                    @change="toggleAll()"
+                                    class="w-5 h-5 text-fit-green-600 border-gray-300 rounded focus:ring-fit-green-500"
+                                >
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produkt</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ilość</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dodano</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Wygasa</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Akcje</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         <template x-for="item in filteredItems" :key="item.id">
                             <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <input
+                                        type="checkbox"
+                                        :checked="selectedItems.includes(item.id)"
+                                        @change="toggleItem(item.id)"
+                                        class="w-5 h-5 text-fit-green-600 border-gray-300 rounded focus:ring-fit-green-500"
+                                    >
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-medium text-gray-900" x-text="item.product_name"></div>
                                 </td>
@@ -241,39 +323,39 @@
                                     <div class="text-sm text-gray-500" x-text="item.added_at"></div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-500" x-text="item.expires_at || 'N/A'"></div>
+                                    <div class="text-sm text-gray-500" x-text="item.expires_at || 'Brak'"></div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span
                                         x-show="item.is_expired"
                                         class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800"
                                     >
-                                        Expired
+                                        Przeterminowane
                                     </span>
                                     <span
                                         x-show="item.is_expiring_soon && !item.is_expired"
                                         class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-100 text-amber-800"
                                     >
-                                        Expiring Soon
+                                        Wygasa wkrótce
                                     </span>
                                     <span
                                         x-show="item.is_fresh"
                                         class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"
                                     >
-                                        Fresh
+                                        Świeże
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <a :href="`/fridge/${item.id}/edit`" class="text-emerald-600 hover:text-emerald-900 mr-4">Edit</a>
+                                    <a :href="`/fridge/${item.id}/edit`" class="text-fit-green-600 hover:text-fit-green-900 mr-4">Edytuj</a>
                                     <form :action="`/fridge/${item.id}`" method="POST" class="inline">
                                         @csrf
                                         @method('DELETE')
                                         <button
                                             type="submit"
-                                            onclick="return confirm('Are you sure?')"
+                                            onclick="return confirm('Czy na pewno chcesz usunąć ten produkt?')"
                                             class="text-red-600 hover:text-red-900"
                                         >
-                                            Delete
+                                            Usuń
                                         </button>
                                     </form>
                                 </td>

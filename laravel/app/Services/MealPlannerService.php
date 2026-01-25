@@ -226,6 +226,17 @@ class MealPlannerService
             return null;
         }
 
+        // Translate recipe titles from English to Polish using VertexAI
+        $recipeTitles = array_map(fn($recipe) => $recipe['title'], array_slice($recipes, 0, 3));
+        $translatedTitles = $this->vertexAIService->translateToPolish($recipeTitles);
+
+        // Replace titles with translated versions
+        foreach (array_slice($recipes, 0, 3) as $index => &$recipe) {
+            if (isset($translatedTitles[$index])) {
+                $recipe['title'] = $translatedTitles[$index];
+            }
+        }
+
         $mealPlan = MealPlan::create([
             'user_id' => $user->id,
             'date' => $date,

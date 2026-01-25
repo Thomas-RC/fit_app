@@ -177,9 +177,22 @@ class FridgeController extends Controller
         ]);
 
         $user = auth()->user();
+        $products = $request->products;
+
+        // Translate product names from English to Polish using VertexAI
+        $productNames = array_column($products, 'product_name');
+        $translatedNames = $this->vertexAIService->translateToPolish($productNames);
+
+        // Replace product names with translated versions
+        foreach ($products as $index => &$productData) {
+            if (isset($translatedNames[$index])) {
+                $productData['product_name'] = $translatedNames[$index];
+            }
+        }
+
         $productsAdded = 0;
 
-        foreach ($request->products as $productData) {
+        foreach ($products as $productData) {
             $expiresAt = null;
             if (isset($productData['expires_days']) && $productData['expires_days'] > 0) {
                 $expiresAt = now()->addDays($productData['expires_days']);
@@ -199,5 +212,41 @@ class FridgeController extends Controller
         return redirect()
             ->route('fridge.index')
             ->with('success', "Successfully added {$productsAdded} products to your fridge!");
+    }
+
+    /**
+     * Delete all fridge items for the authenticated user.
+     */
+    public function deleteAll(): RedirectResponse
+    {
+        $user = auth()->user();
+        $deletedCount = $user->fridgeItems()->count();
+        $user->fridgeItems()->delete();
+
+        return redirect()
+            ->route('fridge.index')
+            ->with('success', "Successfully deleted all {$deletedCount} products from your fridge!");
+    }
+
+    /**
+     * Delete selected fridge items.
+     */
+    public function deleteSelected(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'selected_items' => ['required', 'array', 'min:1'],
+            'selected_items.*' => ['required', 'integer', 'exists:fridge_items,id'],
+        ]);
+
+        $user = auth()->user();
+
+        // Delete only items that belong to the authenticated user
+        $deletedCount = $user->fridgeItems()
+            ->whereIn('id', $request->selected_items)
+            ->delete();
+
+        return redirect()
+            ->route('fridge.index')
+            ->with('success', "Successfully deleted {$deletedCount} selected product(s) from your fridge!");
     }
 }

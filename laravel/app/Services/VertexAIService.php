@@ -233,6 +233,82 @@ class VertexAIService
     }
 
     /**
+     * Translate texts from English to Polish using Vertex AI.
+     *
+     * @param array $texts Array of English texts to translate
+     * @return array Translated texts in the same order
+     */
+    public function translateToPolish(array $texts): array
+    {
+        if (empty($texts)) {
+            return [];
+        }
+
+        try {
+            // Prepare texts for translation
+            $textList = [];
+            foreach ($texts as $index => $text) {
+                $textList[] = ($index + 1) . ". " . $text;
+            }
+
+            // Build translation prompt
+            $prompt = "Translate the following food/recipe names from English to Polish. ";
+            $prompt .= "Keep the translations natural and appropriate for food context. ";
+            $prompt .= "Return ONLY a JSON array of translated texts in the same order.\n\n";
+            $prompt .= "Texts to translate:\n";
+            $prompt .= implode("\n", $textList);
+            $prompt .= "\n\nReturn format: [\"tłumaczenie 1\", \"tłumaczenie 2\", ...]\n";
+            $prompt .= "Return ONLY the JSON array, no other text.";
+
+            // Call Gemini API
+            $response = $this->callGeminiText($prompt);
+
+            if (isset($response['error'])) {
+                Log::warning('Translation failed, returning original texts');
+                return $texts;
+            }
+
+            // Parse the response
+            $translatedTexts = $this->parseTranslationResponse($response['text']);
+
+            // Validate that we got the same number of translations
+            if (count($translatedTexts) === count($texts)) {
+                return $translatedTexts;
+            }
+
+            Log::warning('Translation count mismatch, returning original texts');
+            return $texts;
+
+        } catch (\Exception $e) {
+            Log::error('Translation Error: ' . $e->getMessage());
+            return $texts; // Return original texts on error
+        }
+    }
+
+    /**
+     * Parse translation response from Gemini.
+     */
+    protected function parseTranslationResponse(string $text): array
+    {
+        $text = trim($text);
+        $text = preg_replace('/```json\s*/', '', $text);
+        $text = preg_replace('/```\s*/', '', $text);
+        $text = trim($text);
+
+        try {
+            $data = json_decode($text, true);
+
+            if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
+                return array_values($data);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to parse translation response: ' . $e->getMessage());
+        }
+
+        return [];
+    }
+
+    /**
      * Select best recipes from Spoonacular results using AI.
      *
      * @param array $recipes Array of recipes from Spoonacular

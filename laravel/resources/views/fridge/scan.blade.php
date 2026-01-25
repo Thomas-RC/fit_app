@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Scan Fridge')
+@section('title', 'Skanuj lodówkę')
 
 @section('content')
 <div class="py-12">
@@ -11,7 +11,7 @@
             preview: null,
             analyzing: false,
             progress: 0,
-            progressMessage: 'Uploading...',
+            progressMessage: 'Przesyłanie...',
             results: [],
             error: null,
 
@@ -23,13 +23,13 @@
 
                 // Validate file size (max 5MB)
                 if (file.size > 5 * 1024 * 1024) {
-                    this.error = 'File size must be less than 5MB';
+                    this.error = 'Rozmiar pliku musi być mniejszy niż 5MB';
                     return;
                 }
 
                 // Validate file type
                 if (!file.type.match('image/(jpg|jpeg|png|webp)')) {
-                    this.error = 'File must be JPG, PNG, or WEBP';
+                    this.error = 'Plik musi być w formacie JPG, PNG lub WEBP';
                     return;
                 }
 
@@ -53,7 +53,7 @@
                 this.error = null;
 
                 // Simulate progress
-                this.progressMessage = 'Uploading image...';
+                this.progressMessage = 'Przesyłanie zdjęcia...';
                 this.animateProgress(20, 1000);
 
                 try {
@@ -69,16 +69,16 @@
                         body: formData
                     });
 
-                    this.progressMessage = 'AI analyzing image...';
+                    this.progressMessage = 'AI analizuje zdjęcie...';
                     this.animateProgress(60, 2000);
 
                     const data = await response.json();
 
                     if (!response.ok || !data.success) {
-                        throw new Error(data.error || 'Failed to analyze image');
+                        throw new Error(data.error || 'Nie udało się przeanalizować zdjęcia');
                     }
 
-                    this.progressMessage = 'Processing results...';
+                    this.progressMessage = 'Przetwarzanie wyników...';
                     this.animateProgress(90, 500);
 
                     // Transform products for editing
@@ -91,7 +91,7 @@
                     }));
 
                     this.progress = 100;
-                    this.progressMessage = 'Done!';
+                    this.progressMessage = 'Gotowe!';
 
                     setTimeout(() => {
                         this.state = 'results';
@@ -166,10 +166,10 @@
                         window.location.href = '{{ route('fridge.index') }}';
                     } else {
                         const data = await response.json();
-                        this.error = data.message || 'Failed to save products';
+                        this.error = data.message || 'Nie udało się zapisać produktów';
                     }
                 } catch (error) {
-                    this.error = 'Failed to save products: ' + error.message;
+                    this.error = 'Nie udało się zapisać produktów: ' + error.message;
                 }
             }
         }">
@@ -209,28 +209,28 @@
                                 <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                                     <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
-                                <p class="text-lg font-medium mb-2">Click to upload or drag and drop</p>
-                                <p class="text-sm">JPG, PNG, or WEBP (max 5MB)</p>
+                                <p class="text-lg font-medium mb-2">Kliknij, aby przesłać lub przeciągnij i upuść</p>
+                                <p class="text-sm">JPG, PNG lub WEBP (maks. 5MB)</p>
                             </div>
                         </div>
                     </label>
 
                     <div class="mt-8 flex gap-4 justify-center">
                         <a href="{{ route('fridge.index') }}" class="px-6 py-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium">
-                            Back to Fridge
+                            Powrót do lodówki
                         </a>
                     </div>
                 </div>
             </div>
 
             <!-- State 2: Preview -->
-            <div x-show="state === 'preview'" x-cloak class="bg-white rounded-lg shadow-lg p-8">
+            <div x-show="state === 'preview'" x-cloak class="fit-card p-8">
                 <div class="text-center">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-6">Preview Image</h2>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">Podgląd zdjęcia</h2>
 
                     <!-- Image Preview -->
                     <div class="mb-8">
-                        <img :src="preview" alt="Preview" class="max-w-full max-h-96 mx-auto rounded-lg shadow">
+                        <img :src="preview" alt="Podgląd" class="max-w-full max-h-96 mx-auto rounded-lg shadow">
                     </div>
 
                     <div class="flex gap-4 justify-center">
@@ -238,52 +238,52 @@
                             @click="resetScan"
                             class="px-6 py-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
                         >
-                            Choose Different Photo
+                            Wybierz inne zdjęcie
                         </button>
                         <button
                             @click="analyzeImage"
-                            class="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-md hover:shadow-lg transition font-semibold"
+                            class="btn-fit-primary"
                         >
-                            ✨ Analyze with AI
+                            ✨ Analizuj za pomocą AI
                         </button>
                     </div>
                 </div>
             </div>
 
             <!-- State 3: Analyzing -->
-            <div x-show="state === 'analyzing'" x-cloak class="bg-white rounded-lg shadow-lg p-12">
+            <div x-show="state === 'analyzing'" x-cloak class="fit-card p-12">
                 <div class="text-center">
                     <div class="mb-8">
                         <!-- Spinner -->
-                        <svg class="animate-spin h-16 w-16 mx-auto text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg class="animate-spin h-16 w-16 mx-auto text-fit-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                     </div>
 
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Analyzing Your Fridge...</h2>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Analizowanie lodówki...</h2>
                     <p class="text-gray-600 mb-8" x-text="progressMessage"></p>
 
                     <!-- Progress Bar -->
                     <div class="max-w-md mx-auto mb-4">
                         <div class="bg-gray-200 rounded-full h-4 overflow-hidden">
                             <div
-                                class="bg-gradient-to-r from-emerald-500 to-teal-600 h-full rounded-full transition-all duration-300"
+                                class="bg-fit-green-600 h-full rounded-full transition-all duration-300"
                                 :style="`width: ${progress}%`"
                             ></div>
                         </div>
                         <p class="text-sm text-gray-500 mt-2" x-text="`${Math.round(progress)}%`"></p>
                     </div>
 
-                    <p class="text-sm text-gray-500">This usually takes 5-10 seconds</p>
+                    <p class="text-sm text-gray-500">Zazwyczaj zajmuje to 5-10 sekund</p>
                 </div>
             </div>
 
             <!-- State 4: Results -->
-            <div x-show="state === 'results'" x-cloak class="bg-white rounded-lg shadow-lg p-8">
+            <div x-show="state === 'results'" x-cloak class="fit-card p-8">
                 <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Detected Products</h2>
-                    <p class="text-gray-600">Review and edit the detected items before saving</p>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Wykryte produkty</h2>
+                    <p class="text-gray-600">Sprawdź i edytuj wykryte produkty przed zapisaniem</p>
                 </div>
 
                 <!-- Products List -->
@@ -293,40 +293,40 @@
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <!-- Product Name -->
                                 <div class="md:col-span-2">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nazwa produktu</label>
                                     <input
                                         type="text"
                                         x-model="product.product_name"
-                                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                                        placeholder="Product name"
+                                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-fit-green-500 focus:border-fit-green-500"
+                                        placeholder="Nazwa produktu"
                                     >
                                 </div>
 
                                 <!-- Quantity -->
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Ilość</label>
                                     <input
                                         type="number"
                                         x-model="product.quantity"
                                         step="0.01"
-                                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-fit-green-500 focus:border-fit-green-500"
                                         placeholder="1.5"
                                     >
                                 </div>
 
                                 <!-- Unit -->
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Jednostka</label>
                                     <select
                                         x-model="product.unit"
-                                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-fit-green-500 focus:border-fit-green-500"
                                     >
                                         <option value="kg">kg</option>
                                         <option value="g">g</option>
                                         <option value="L">L</option>
                                         <option value="ml">ml</option>
-                                        <option value="pieces">pieces</option>
-                                        <option value="packs">packs</option>
+                                        <option value="pieces">sztuki</option>
+                                        <option value="packs">opakowania</option>
                                     </select>
                                 </div>
                             </div>
@@ -334,11 +334,11 @@
                             <!-- Expires Days & Remove -->
                             <div class="flex gap-4 mt-4">
                                 <div class="flex-1">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Expires in (days)</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Wygasa za (dni)</label>
                                     <input
                                         type="number"
                                         x-model="product.expires_days"
-                                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                        class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-fit-green-500 focus:border-fit-green-500"
                                         placeholder="7"
                                     >
                                 </div>
@@ -347,7 +347,7 @@
                                         @click="removeProduct(product.id)"
                                         class="px-4 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200"
                                     >
-                                        Remove
+                                        Usuń
                                     </button>
                                 </div>
                             </div>
@@ -359,9 +359,9 @@
                 <div class="mb-8">
                     <button
                         @click="addProduct"
-                        class="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 transition"
+                        class="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-fit-green-500 hover:text-fit-green-600 hover:bg-fit-green-50 transition"
                     >
-                        + Add Another Product
+                        + Dodaj kolejny produkt
                     </button>
                 </div>
 
@@ -371,13 +371,13 @@
                         @click="resetScan"
                         class="flex-1 px-6 py-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
                     >
-                        Scan Again
+                        Skanuj ponownie
                     </button>
                     <button
                         @click="saveToFridge"
-                        class="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-md hover:shadow-lg transition font-semibold"
+                        class="flex-1 btn-fit-primary"
                     >
-                        Save to Fridge
+                        Zapisz do lodówki
                     </button>
                 </div>
             </div>
