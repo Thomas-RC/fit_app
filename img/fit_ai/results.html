@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>FIT AI – Menu dnia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container wide">
+    <div class="card wide green-bg">
+
+        <!-- PODSUMOWANIE -->
+        <div class="summary">
+            <h2>Menu na dziś</h2>
+            <span class="total-kcal">
+                Suma dnia: <strong id="totalKcal">—</strong>
+            </span>
+        </div>
+
+        <!-- TU JS WSTAWI POSIŁKI -->
+        <div id="mealsContainer"></div>
+
+        <!-- DOLNA SEKCJA -->
+        <div class="bottom-section">
+
+            <div class="shopping">
+                <h3>Lista zakupów</h3>
+                <ul id="shoppingList"></ul>
+            </div>
+
+            <div class="actions">
+                <button class="try-btn full" onclick="window.print()">
+                    Drukuj menu
+                </button>
+
+                <button class="secondary-btn full" onclick="location.href='app.html'">
+                    Zmień wymagania
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ⚠️ SCRIPT NA KOŃCU -->
+<script src="results.js"></script>
+</body>
+</html>

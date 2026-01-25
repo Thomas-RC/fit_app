@@ -1,0 +1,224 @@
+/* FIT AI Custom Styles - Based on design mockups */
+
+:root {
+    --primary-green: #3cb371;
+    --primary-green-dark: #2e8b57;
+    --primary-green-light: #6dd5a7;
+    --bg-green-light: #f1fdf6;
+    --bg-green-stripe: #f4fff6;
+}
+
+body {
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(135deg, #6dd5a7, #3cb371);
+    min-height: 100vh;
+}
+
+/* Green striped background */
+.green-bg-stripes {
+    background-color: #f4fff6;
+    background-image: repeating-linear-gradient(
+        45deg,
+        rgba(60, 179, 113, 0.05),
+        rgba(60, 179, 113, 0.05) 10px,
+        transparent 10px,
+        transparent 20px
+    );
+}
+
+/* Custom card styles */
+.fit-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Primary green button */
+.btn-fit-primary {
+    background: var(--primary-green);
+    color: white;
+    border: none;
+    padding: 14px 20px;
+    font-size: 1rem;
+    border-radius: 8px;
+    transition: background 0.2s ease;
+}
+
+.btn-fit-primary:hover {
+    background: var(--primary-green-dark);
+    color: white;
+}
+
+/* Secondary button */
+.btn-fit-secondary {
+    background: #fff;
+    border: 1px solid var(--primary-green);
+    color: var(--primary-green-dark);
+    padding: 14px 20px;
+    font-size: 0.95rem;
+    border-radius: 8px;
+}
+
+.btn-fit-secondary:hover {
+    background: var(--bg-green-light);
+    border-color: var(--primary-green-dark);
+}
+
+/* Assistant message box */
+.assistant-box {
+    background: var(--bg-green-light);
+    border-left: 4px solid var(--primary-green);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    font-size: 0.95rem;
+}
+
+/* Meal card */
+.meal-card {
+    border: 1px solid #eee;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+    background: white;
+}
+
+.meal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+/* Calories badge */
+.kcal-badge {
+    font-weight: bold;
+    color: var(--primary-green);
+    font-size: 1.1rem;
+}
+
+/* Upload box */
+.upload-box {
+    display: block;
+    text-align: center;
+    padding: 20px;
+    border: 2px dashed var(--primary-green);
+    border-radius: 10px;
+    cursor: pointer;
+    color: var(--primary-green-dark);
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    transition: background 0.2s ease;
+}
+
+.upload-box:hover {
+    background: var(--bg-green-light);
+}
+
+/* Custom input styles */
+.fit-input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    font-size: 1rem;
+}
+
+.fit-input:focus {
+    border-color: var(--primary-green);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(60, 179, 113, 0.1);
+}
+
+/* Wide container for results */
+.container-wide {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Gradient header */
+.gradient-header {
+    background: linear-gradient(135deg, var(--primary-green-light), var(--primary-green));
+    border-radius: 12px;
+    padding: 30px;
+    color: white;
+    margin-bottom: 25px;
+}
+
+/* Total calories display */
+.total-kcal {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: white;
+}
+
+/* Shopping list box */
+.shopping-box {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #eee;
+}
+
+/* Nutrition stats */
+.nutrition-stat {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.nutrition-stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin: 5px 0;
+}
+
+.nutrition-stat-label {
+    font-size: 0.85rem;
+    color: #666;
+    text-transform: uppercase;
+}
+
+/* Ingredient tags */
+.ingredient-tag {
+    display: inline-block;
+    padding: 6px 12px;
+    background: #f5f5f5;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    margin: 4px;
+    color: #555;
+}
+
+/* Meal type badge */
+.meal-type-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.meal-type-breakfast {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.meal-type-lunch {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.meal-type-dinner {
+    background: #e2d9f3;
+    color: #5a3f7a;
+}
+
+/* Override Tailwind styles when needed */
+.fit-override {
+    background: linear-gradient(135deg, #6dd5a7, #3cb371) !important;
+}

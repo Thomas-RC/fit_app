@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>FIT AI – Twoja lodówka</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+
+        <div class="assistant">
+            <strong>FIT AI:</strong><br>
+            Cześć! Co dziś masz w lodówce?
+        </div>
+
+        <h2>Preferencje</h2>
+
+        <div class="preferences">
+            <label><input type="checkbox"> Bez mięsa</label>
+            <label><input type="checkbox"> Bez nabiału</label>
+            <label><input type="checkbox"> Nisko-węglowodanowe</label>
+            <label><input type="checkbox"> Bez glutenu</label>
+        </div>
+
+        <label class="label">Dzienny limit kalorii</label>
+        <input type="number" placeholder="np. 2000 kcal" class="input">
+
+        <h2>Zawartość lodówki</h2>
+        <label class="upload-box">
+            Dodaj zdjęcie wnętrza lodówki lub składników
+            <input type="file" accept="image/*" hidden>
+        </label>
+  
+        <label class="label">Pozostałe produkty</label>
+        <textarea class="textarea" placeholder="np. oliwa, ryż, przyprawy..."></textarea>
+
+        <button class="try-btn full" onclick="location.href='results.html'">
+            Generuj posiłki
+        </button>
+
+    </div>
+</div>
+
+</body>
+</html>

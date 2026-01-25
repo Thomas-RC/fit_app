@@ -1,0 +1,38 @@
+# Laravel
+/laravel/node_modules
+/laravel/public/hot
+/laravel/public/storage
+/laravel/storage/*.key
+/laravel/vendor
+/laravel/.env
+/laravel/.env.backup
+/laravel/.phpunit.result.cache
+/laravel/Homestead.json
+/laravel/Homestead.yaml
+/laravel/npm-debug.log
+/laravel/yarn-error.log
+/laravel/.DS_Store
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Docker
+/laravel/storage/logs/*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Credentials
+vertex-ai-key.json
+*.pem
+*.key
