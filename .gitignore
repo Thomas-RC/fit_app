@@ -36,3 +36,29 @@ Thumbs.db
 vertex-ai-key.json
 *.pem
 *.key
+
+# Documentation
+docs/
+
+# Backups
+backups/
+*.sql
+*.dump
+
+# Docker
+docker-compose.override.yml
+.env.traefik
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
+# Test coverage
+coverage/
+.phpunit.cache/
+htmlcov/
+
+# Build artifacts
+dist/
+build/
