@@ -1,0 +1,10 @@
+# Ignore actual .env file (only .env.production.example should be committed)
+.env
+
+# Ignore any backup files
+*.bak
+*~
+
+# Ignore temporary files
+*.tmp
+*.swp

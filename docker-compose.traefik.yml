@@ -1,0 +1,93 @@
+services:
+  # Nginx Web Server (Production with Traefik)
+  nginx:
+    image: nginx:alpine
+    container_name: fit-ai-nginx
+    volumes:
+      - ./laravel:/var/www/html
+      - ./docker/nginx/nginx.traefik.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - traefik-public  # Traefik network
+      - fit-ai-internal # Internal network for app communication
+    restart: unless-stopped
+    labels:
+      # Enable Traefik
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+
+      # HTTP Router (redirect to HTTPS)
+      - "traefik.http.routers.fitai-http.rule=Host(`${DOMAIN}`) || Host(`www.${DOMAIN}`)"
+      - "traefik.http.routers.fitai-http.entrypoints=web"
+      - "traefik.http.routers.fitai-http.middlewares=fitai-redirect-https"
+
+      # HTTPS Router
+      - "traefik.http.routers.fitai-https.rule=Host(`${DOMAIN}`) || Host(`www.${DOMAIN}`)"
+      - "traefik.http.routers.fitai-https.entrypoints=websecure"
+      - "traefik.http.routers.fitai-https.tls=true"
+      - "traefik.http.routers.fitai-https.tls.certresolver=letsencrypt"
+
+      # Service
+      - "traefik.http.services.fitai.loadbalancer.server.port=80"
+
+      # Middleware: Redirect HTTP to HTTPS
+      - "traefik.http.middlewares.fitai-redirect-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.fitai-redirect-https.redirectscheme.permanent=true"
+
+      # Optional: WWW redirect
+      - "traefik.http.middlewares.fitai-redirect-www.redirectregex.regex=^https://www\\.(.+)"
+      - "traefik.http.middlewares.fitai-redirect-www.redirectregex.replacement=https://$${1}"
+      - "traefik.http.middlewares.fitai-redirect-www.redirectregex.permanent=true"
+
+  # PHP-FPM Application (Production)
+  app:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: fit-ai-app
+    working_dir: /var/www/html
+    volumes:
+      - ./laravel:/var/www/html
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=${DB_DATABASE:-fit_ai_prod}
+      - DB_USERNAME=${DB_USERNAME:-fit_ai_user}
+      - DB_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      - db
+    networks:
+      - fit-ai-internal
+    restart: unless-stopped
+    user: "1000:1000"
+
+  # MySQL Database (Production)
+  db:
+    image: mysql:8.0
+    container_name: fit-ai-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_DATABASE:-fit_ai_prod}
+      MYSQL_USER: ${DB_USERNAME:-fit_ai_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data_prod:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./backups:/backups
+    networks:
+      - fit-ai-internal
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+
+networks:
+  traefik-public:
+    external: true  # Must be created externally (Traefik network)
+  fit-ai-internal:
+    driver: bridge
+
+volumes:
+  mysql_data_prod:
+    driver: local
