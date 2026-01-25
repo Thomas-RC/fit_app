@@ -84,7 +84,7 @@
                             <div class="border border-gray-200 rounded-xl p-4 hover:border-fit-green-500 transition">
                                 <div class="flex justify-between items-start mb-2">
                                     <div>
-                                        <div class="text-sm text-gray-600">{{ $mealPlan->date->format('l, j F Y') }}</div>
+                                        <div class="text-sm text-gray-600">{{ $mealPlan->date->translatedFormat('l, j F Y') }}</div>
                                         <div class="text-lg font-semibold text-fit-green-600">{{ $mealPlan->total_calories }} kcal</div>
                                     </div>
                                     <a href="{{ route('meal-plans.show', $mealPlan) }}" class="text-fit-green-600 hover:text-fit-green-700 font-medium">
@@ -114,7 +114,7 @@
                         <div class="bg-amber-50 rounded-lg p-4 border border-amber-200">
                             <div class="font-medium text-gray-900">{{ $item->product_name }}</div>
                             <div class="text-sm text-gray-600">{{ $item->quantity }} {{ $item->unit }}</div>
-                            <div class="text-xs text-amber-700 mt-2">Wygasa: {{ $item->expires_at->format('j M Y') }}</div>
+                            <div class="text-xs text-amber-700 mt-2">Wygasa: {{ $item->expires_at->translatedFormat('j M Y') }}</div>
                         </div>
                     @endforeach
                 </div>

@@ -32,8 +32,8 @@
                         <div class="bg-gradient-to-r from-fit-green-500 to-green-600 p-6 text-white">
                             <div class="flex justify-between items-start mb-2">
                                 <div>
-                                    <div class="text-sm opacity-90">{{ $plan->date->format('l') }}</div>
-                                    <div class="text-2xl font-bold">{{ $plan->date->format('j M Y') }}</div>
+                                    <div class="text-sm opacity-90">{{ $plan->date->translatedFormat('l') }}</div>
+                                    <div class="text-2xl font-bold">{{ $plan->date->translatedFormat('j M Y') }}</div>
                                 </div>
                                 <div class="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2">
                                     <div class="text-xs opacity-90">Suma</div>

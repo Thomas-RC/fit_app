@@ -106,9 +106,9 @@
                     Added Date
                 </label>
                 <div class="px-4 py-3 bg-gray-50 border border-gray-200 rounded-md text-gray-700">
-                    {{ $fridgeItem->added_at->format('F j, Y \a\t g:i A') }}
+                    {{ $fridgeItem->added_at->translatedFormat('j F Y, H:i') }}
                 </div>
-                <p class="text-sm text-gray-500 mt-2">This date cannot be changed</p>
+                <p class="text-sm text-gray-500 mt-2">Ta data nie może być zmieniona</p>
             </div>
 
             <!-- Actions -->

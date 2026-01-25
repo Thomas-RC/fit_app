@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Admin Settings')
+@section('title', 'Ustawienia administratora')
 
 @section('content')
 <div class="py-12" x-data="{ activeTab: 'vertex-ai', testing: false }">
@@ -11,7 +11,7 @@
                 <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                 </svg>
-                <h1 class="text-3xl font-bold text-gray-900">Admin Settings</h1>
+                <h1 class="text-3xl font-bold text-gray-900">Ustawienia administratora</h1>
             </div>
             <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
                 <div class="flex items-start gap-3">
@@ -19,8 +19,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                     </svg>
                     <div>
-                        <p class="text-sm font-medium text-amber-800">Sensitive Configuration</p>
-                        <p class="text-sm text-amber-700">All credentials are stored encrypted in the database. Only administrators can access this page.</p>
+                        <p class="text-sm font-medium text-amber-800">Poufna konfiguracja</p>
+                        <p class="text-sm text-amber-700">Wszystkie dane uwierzytelniające są przechowywane zaszyfrowane w bazie danych. Tylko administratorzy mają dostęp do tej strony.</p>
                     </div>
                 </div>
             </div>
@@ -49,7 +49,7 @@
                         :class="activeTab === 'general' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                         class="py-4 px-1 border-b-2 font-medium text-sm transition"
                     >
-                        General
+                        Ogólne
                     </button>
                 </nav>
             </div>
@@ -59,8 +59,8 @@
         <div x-show="activeTab === 'vertex-ai'" x-cloak>
             <div class="bg-white rounded-lg shadow-lg p-8">
                 <div class="mb-6">
-                    <h2 class="text-xl font-bold text-gray-900 mb-2">Google Cloud Vertex AI Configuration</h2>
-                    <p class="text-sm text-gray-600">Configure Gemini Vision API for scanning fridge photos and detecting food items.</p>
+                    <h2 class="text-xl font-bold text-gray-900 mb-2">Konfiguracja Google Cloud Vertex AI</h2>
+                    <p class="text-sm text-gray-600">Skonfiguruj Gemini Vision API do skanowania zdjęć lodówki i wykrywania produktów spożywczych.</p>
                 </div>
 
                 <!-- Status Badge -->
@@ -72,28 +72,28 @@
                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
-                                Configured
+                                Skonfigurowane
                             </span>
                         @else
                             <span class="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
-                                Not Configured
+                                Nie skonfigurowane
                             </span>
                         @endif
                     </div>
                     @if($vertexAIConfigured && $vertexAIUpdatedAt)
-                        <p class="text-xs text-gray-500 mt-1">Last updated: {{ $vertexAIUpdatedAt->diffForHumans() }}</p>
+                        <p class="text-xs text-gray-500 mt-1">Ostatnia aktualizacja: {{ $vertexAIUpdatedAt->diffForHumans() }}</p>
                     @endif
                 </div>
 
                 <!-- Current Config -->
                 @if($vertexAIConfigured)
                     <div class="bg-gray-50 rounded-lg p-4 mb-6">
-                        <h3 class="text-sm font-semibold text-gray-700 mb-2">Current Configuration</h3>
+                        <h3 class="text-sm font-semibold text-gray-700 mb-2">Aktualna konfiguracja</h3>
                         <div class="space-y-1 text-sm">
-                            <p><span class="font-medium text-gray-600">Project ID:</span> <code class="text-emerald-600">{{ $vertexAIProjectId }}</code></p>
+                            <p><span class="font-medium text-gray-600">ID projektu:</span> <code class="text-emerald-600">{{ $vertexAIProjectId }}</code></p>
                         </div>
                     </div>
                 @endif
@@ -135,7 +135,7 @@
                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                     </svg>
-                                    Choose JSON File
+                                    Wybierz plik JSON
                                 </label>
                                 <input
                                     type="file"
@@ -144,22 +144,22 @@
                                     accept=".json"
                                     required
                                     class="sr-only"
-                                    onchange="document.getElementById('file-name').textContent = this.files[0]?.name || 'No file selected'"
+                                    onchange="document.getElementById('file-name').textContent = this.files[0]?.name || 'Nie wybrano pliku'"
                                 >
                             </div>
-                            <p class="text-xs text-gray-500 mt-2" id="file-name">No file selected</p>
-                            <p class="text-xs text-gray-500 mt-1">Max file size: 10MB</p>
+                            <p class="text-xs text-gray-500 mt-2" id="file-name">Nie wybrano pliku</p>
+                            <p class="text-xs text-gray-500 mt-1">Maksymalny rozmiar pliku: 10MB</p>
                         </div>
                         @error('credentials_file')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
                         <div class="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
                             <p class="text-xs text-blue-800">
-                                <strong>How to get service account JSON:</strong><br>
-                                1. Go to <a href="https://console.cloud.google.com/iam-admin/serviceaccounts" target="_blank" class="underline">Google Cloud Console</a><br>
-                                2. Select your project → Create Service Account<br>
-                                3. Grant "Vertex AI User" role<br>
-                                4. Create key → JSON format → Download
+                                <strong>Jak uzyskać JSON konta usługi:</strong><br>
+                                1. Przejdź do <a href="https://console.cloud.google.com/iam-admin/serviceaccounts" target="_blank" class="underline">Google Cloud Console</a><br>
+                                2. Wybierz projekt → Utwórz konto usługi<br>
+                                3. Przyznaj rolę "Vertex AI User"<br>
+                                4. Utwórz klucz → format JSON → Pobierz
                             </p>
                         </div>
                     </div>
@@ -173,7 +173,7 @@
                             <svg class="inline w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                             </svg>
-                            Upload Credentials
+                            Prześlij dane uwierzytelniające
                         </button>
                         @if($vertexAIConfigured)
                             <button
@@ -185,7 +185,7 @@
                                 <svg class="inline w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
-                                <span x-text="testing ? 'Testing...' : 'Test Connection'"></span>
+                                <span x-text="testing ? 'Testowanie...' : 'Testuj połączenie'"></span>
                             </button>
                         @endif
                     </div>
@@ -197,8 +197,8 @@
         <div x-show="activeTab === 'spoonacular'" x-cloak>
             <div class="bg-white rounded-lg shadow-lg p-8">
                 <div class="mb-6">
-                    <h2 class="text-xl font-bold text-gray-900 mb-2">Spoonacular API Configuration</h2>
-                    <p class="text-sm text-gray-600">Configure Spoonacular API for recipe search, meal planning, and nutrition data.</p>
+                    <h2 class="text-xl font-bold text-gray-900 mb-2">Konfiguracja Spoonacular API</h2>
+                    <p class="text-sm text-gray-600">Skonfiguruj Spoonacular API do wyszukiwania przepisów, planowania posiłków i danych żywieniowych.</p>
                 </div>
 
                 <!-- Status Badge -->
@@ -210,14 +210,14 @@
                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
-                                Configured
+                                Skonfigurowane
                             </span>
                         @else
                             <span class="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
-                                Not Configured
+                                Nie skonfigurowane
                             </span>
                         @endif
                     </div>
@@ -226,9 +226,9 @@
                 <!-- Current Config -->
                 @if($spoonacularConfigured && $maskedSpoonacularKey)
                     <div class="bg-gray-50 rounded-lg p-4 mb-6">
-                        <h3 class="text-sm font-semibold text-gray-700 mb-2">Current Configuration</h3>
+                        <h3 class="text-sm font-semibold text-gray-700 mb-2">Aktualna konfiguracja</h3>
                         <div class="space-y-1 text-sm">
-                            <p><span class="font-medium text-gray-600">API Key:</span> <code class="text-emerald-600">{{ $maskedSpoonacularKey }}</code></p>
+                            <p><span class="font-medium text-gray-600">Klucz API:</span> <code class="text-emerald-600">{{ $maskedSpoonacularKey }}</code></p>
                         </div>
                     </div>
                 @endif
@@ -247,7 +247,7 @@
                             name="api_key"
                             id="api_key"
                             required
-                            placeholder="Enter your Spoonacular API key"
+                            placeholder="Wprowadź klucz API Spoonacular"
                             class="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
                         >
                         @error('api_key')
@@ -255,12 +255,12 @@
                         @enderror
                         <div class="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
                             <p class="text-xs text-blue-800">
-                                <strong>How to get API key:</strong><br>
-                                1. Go to <a href="https://spoonacular.com/food-api" target="_blank" class="underline">Spoonacular API</a><br>
-                                2. Sign up for a free account<br>
-                                3. Go to Profile → Show API Key<br>
-                                4. Copy and paste the key here<br>
-                                <em class="block mt-1">Free tier: 150 requests/day</em>
+                                <strong>Jak uzyskać klucz API:</strong><br>
+                                1. Przejdź do <a href="https://spoonacular.com/food-api" target="_blank" class="underline">Spoonacular API</a><br>
+                                2. Zarejestruj darmowe konto<br>
+                                3. Przejdź do Profil → Pokaż klucz API<br>
+                                4. Skopiuj i wklej klucz tutaj<br>
+                                <em class="block mt-1">Darmowy plan: 150 żądań/dzień</em>
                             </p>
                         </div>
                     </div>
@@ -274,7 +274,7 @@
                             <svg class="inline w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
                             </svg>
-                            Save API Key
+                            Zapisz klucz API
                         </button>
                         @if($spoonacularConfigured)
                             <button
@@ -286,7 +286,7 @@
                                 <svg class="inline w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
-                                <span x-text="testing ? 'Testing...' : 'Test Connection'"></span>
+                                <span x-text="testing ? 'Testowanie...' : 'Testuj połączenie'"></span>
                             </button>
                         @endif
                     </div>
@@ -298,25 +298,25 @@
         <div x-show="activeTab === 'general'" x-cloak>
             <div class="bg-white rounded-lg shadow-lg p-8">
                 <div class="mb-6">
-                    <h2 class="text-xl font-bold text-gray-900 mb-2">General Settings</h2>
-                    <p class="text-sm text-gray-600">Application-wide configuration.</p>
+                    <h2 class="text-xl font-bold text-gray-900 mb-2">Ustawienia ogólne</h2>
+                    <p class="text-sm text-gray-600">Konfiguracja całej aplikacji.</p>
                 </div>
 
                 <div class="space-y-6">
                     <!-- App Info -->
                     <div>
-                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Application Information</h3>
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Informacje o aplikacji</h3>
                         <div class="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
-                            <p><span class="font-medium text-gray-600">Name:</span> {{ config('app.name') }}</p>
-                            <p><span class="font-medium text-gray-600">Environment:</span> <code class="text-emerald-600">{{ config('app.env') }}</code></p>
-                            <p><span class="font-medium text-gray-600">Debug Mode:</span> <code class="text-emerald-600">{{ config('app.debug') ? 'Enabled' : 'Disabled' }}</code></p>
+                            <p><span class="font-medium text-gray-600">Nazwa:</span> {{ config('app.name') }}</p>
+                            <p><span class="font-medium text-gray-600">Środowisko:</span> <code class="text-emerald-600">{{ config('app.env') }}</code></p>
+                            <p><span class="font-medium text-gray-600">Tryb debugowania:</span> <code class="text-emerald-600">{{ config('app.debug') ? 'Włączony' : 'Wyłączony' }}</code></p>
                             <p><span class="font-medium text-gray-600">URL:</span> <code class="text-emerald-600">{{ config('app.url') }}</code></p>
                         </div>
                     </div>
 
                     <!-- Admin Emails -->
                     <div>
-                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Admin Emails</h3>
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">E-maile administratorów</h3>
                         <div class="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
                             @php
                                 $adminEmails = config('app.admin_emails', []);
@@ -329,17 +329,17 @@
                                     {{ trim($email) }}
                                 </p>
                             @endforeach
-                            <p class="text-xs text-gray-500 mt-2">Configure in .env: ADMIN_EMAILS</p>
+                            <p class="text-xs text-gray-500 mt-2">Konfiguruj w .env: ADMIN_EMAILS</p>
                         </div>
                     </div>
 
                     <!-- Default Settings -->
                     <div>
-                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Default User Settings</h3>
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Domyślne ustawienia użytkownika</h3>
                         <div class="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
-                            <p><span class="font-medium text-gray-600">Default Daily Calories:</span> 2000 kcal</p>
-                            <p><span class="font-medium text-gray-600">Default Diet:</span> Omnivore</p>
-                            <p class="text-xs text-gray-500 mt-2">Users can customize in their preferences</p>
+                            <p><span class="font-medium text-gray-600">Domyślne dzienne kalorie:</span> 2000 kcal</p>
+                            <p><span class="font-medium text-gray-600">Domyślna dieta:</span> Wszystkożerna</p>
+                            <p class="text-xs text-gray-500 mt-2">Użytkownicy mogą dostosować w swoich preferencjach</p>
                         </div>
                     </div>
                 </div>
@@ -367,13 +367,13 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('✅ Success!\n\n' + data.message);
+                alert('✅ Sukces!\n\n' + data.message);
             } else {
-                alert('❌ Failed\n\n' + data.message);
+                alert('❌ Niepowodzenie\n\n' + data.message);
             }
         })
         .catch(error => {
-            alert('❌ Error\n\nConnection test failed: ' + error.message);
+            alert('❌ Błąd\n\nTest połączenia nie powiódł się: ' + error.message);
         })
         .finally(() => {
             Alpine.store('testing', false);

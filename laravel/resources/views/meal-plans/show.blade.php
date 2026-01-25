@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Meal Plan - ' . $mealPlan->date->format('M j, Y'))
+@section('title', 'Plan posiłków - ' . $mealPlan->date->translatedFormat('j M Y'))
 
 @section('content')
 <div class="py-12">
@@ -14,16 +14,16 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                         </svg>
-                        Back to Meal Plans
+                        Powrót do planów posiłków
                     </a>
-                    <form action="{{ route('meal-plans.destroy', $mealPlan) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this meal plan?');">
+                    <form action="{{ route('meal-plans.destroy', $mealPlan) }}" method="POST" onsubmit="return confirm('Czy na pewno chcesz usunąć ten plan posiłków?');">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="text-red-600 hover:text-red-700 flex items-center gap-2 text-sm">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                             </svg>
-                            Delete Plan
+                            Usuń plan
                         </button>
                     </form>
                 </div>
@@ -32,8 +32,8 @@
                 <div class="flex justify-between items-center mb-5">
                     <div>
                         <h1 class="text-2xl font-bold mb-1">Menu na dziś</h1>
-                        <div class="text-sm text-gray-600">{{ $mealPlan->date->format('l, F j, Y') }}</div>
-                        <div class="text-xs text-gray-500">Generated {{ $mealPlan->created_at->diffForHumans() }}</div>
+                        <div class="text-sm text-gray-600">{{ $mealPlan->date->translatedFormat('l, j F Y') }}</div>
+                        <div class="text-xs text-gray-500">Wygenerowano {{ $mealPlan->created_at->diffForHumans() }}</div>
                     </div>
                     <div class="text-right">
                         <span class="total-kcal">
@@ -53,24 +53,24 @@
             <!-- Nutrition Summary -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div class="nutrition-stat">
-                    <div class="nutrition-stat-label">Calories</div>
+                    <div class="nutrition-stat-label">Kalorie</div>
                     <div class="nutrition-stat-value text-fit-green-600">{{ number_format($mealPlan->total_calories) }}</div>
                     <div class="text-xs text-gray-500">kcal</div>
                 </div>
                 <div class="nutrition-stat">
-                    <div class="nutrition-stat-label">Protein</div>
+                    <div class="nutrition-stat-label">Białko</div>
                     <div class="nutrition-stat-value text-blue-600">{{ number_format($totalProtein) }}</div>
-                    <div class="text-xs text-gray-500">grams</div>
+                    <div class="text-xs text-gray-500">g</div>
                 </div>
                 <div class="nutrition-stat">
-                    <div class="nutrition-stat-label">Carbs</div>
+                    <div class="nutrition-stat-label">Węglowodany</div>
                     <div class="nutrition-stat-value text-amber-600">{{ number_format($totalCarbs) }}</div>
-                    <div class="text-xs text-gray-500">grams</div>
+                    <div class="text-xs text-gray-500">g</div>
                 </div>
                 <div class="nutrition-stat">
-                    <div class="nutrition-stat-label">Fat</div>
+                    <div class="nutrition-stat-label">Tłuszcze</div>
                     <div class="nutrition-stat-value text-red-600">{{ number_format($totalFat) }}</div>
-                    <div class="text-xs text-gray-500">grams</div>
+                    <div class="text-xs text-gray-500">g</div>
                 </div>
             </div>
 
@@ -168,7 +168,7 @@
             <!-- Actions -->
             <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <a href="{{ route('meal-plans.index') }}" class="btn-fit-secondary text-center no-underline">
-                    Back to All Plans
+                    Powrót do wszystkich planów
                 </a>
                 <button onclick="window.print()" class="btn-fit-primary">
                     Drukuj menu
