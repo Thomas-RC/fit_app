@@ -74,6 +74,29 @@
                 </div>
             </div>
 
+            <!-- Shopping List Section -->
+            @if(count($missingIngredients) > 0)
+            <div class="mb-6 p-6 bg-amber-50 border-2 border-amber-200 rounded-lg">
+                <div class="flex items-center gap-3 mb-4">
+                    <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <h3 class="text-xl font-bold text-gray-900 m-0">🛒 Dokup produkty</h3>
+                </div>
+                <p class="text-sm text-gray-600 mb-4">Poniższe składniki są potrzebne do przygotowania posiłków z tego planu (brakuje w Twojej lodówce):</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                    @foreach($missingIngredients as $ingredient)
+                        <div class="flex items-center gap-2 text-sm text-gray-700 bg-white px-3 py-2 rounded border border-amber-200">
+                            <svg class="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                            {{ $ingredient }}
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
             <!-- Meals -->
             <div class="space-y-5">
                 @foreach($mealPlan->recipes as $recipe)
@@ -109,7 +132,7 @@
                                 @if(isset($recipeData['extendedIngredients']) && count($recipeData['extendedIngredients']) > 0)
                                     <ul class="text-sm text-gray-600">
                                         @foreach($recipeData['extendedIngredients'] as $ingredient)
-                                            <li>{{ $ingredient['original'] ?? $ingredient['name'] }}</li>
+                                            <li>{{ $ingredient['original_pl'] ?? $ingredient['name_pl'] ?? $ingredient['original'] ?? $ingredient['name'] }}</li>
                                         @endforeach
                                     </ul>
                                 @else
@@ -143,7 +166,7 @@
                                 @if(isset($recipeData['analyzedInstructions'][0]['steps']) && count($recipeData['analyzedInstructions'][0]['steps']) > 0)
                                     <ol class="text-sm text-gray-600">
                                         @foreach($recipeData['analyzedInstructions'][0]['steps'] as $step)
-                                            <li class="mb-2">{{ $step['step'] }}</li>
+                                            <li class="mb-2">{{ $step['step_pl'] ?? $step['step'] }}</li>
                                         @endforeach
                                     </ol>
                                 @else

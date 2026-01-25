@@ -127,7 +127,52 @@ class MealPlanController extends Controller
             }
         }
 
-        return view('meal-plans.show', compact('mealPlan', 'totalProtein', 'totalCarbs', 'totalFat'));
+        // Get user's fridge items for comparison (in Polish, lowercase)
+        $userFridgeItems = $mealPlan->user->fridgeItems()
+            ->pluck('product_name')
+            ->map(fn($name) => strtolower(trim($name)))
+            ->toArray();
+
+        // Collect all unique ingredients from all recipes (using Polish translations from database)
+        $allIngredientsPolish = [];
+        foreach ($mealPlan->recipes as $recipe) {
+            $recipeData = $recipe->recipe_data;
+
+            // Get ingredients from extendedIngredients (already translated in database)
+            if (isset($recipeData['extendedIngredients']) && is_array($recipeData['extendedIngredients'])) {
+                foreach ($recipeData['extendedIngredients'] as $ingredient) {
+                    // Use translated Polish name from database, fallback to English if not available
+                    $polishName = $ingredient['name_pl'] ?? $ingredient['name'] ?? $ingredient['original'] ?? null;
+
+                    if ($polishName) {
+                        $polishNameLower = strtolower(trim($polishName));
+                        if (!in_array($polishNameLower, $allIngredientsPolish)) {
+                            $allIngredientsPolish[] = $polishNameLower;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Filter out ingredients that user already has in fridge
+        $missingIngredients = [];
+        foreach ($allIngredientsPolish as $polishName) {
+            // Check if ingredient is in fridge (partial match for flexibility)
+            $found = false;
+            foreach ($userFridgeItems as $fridgeItem) {
+                // Check for partial match (e.g., "banan" matches "banany")
+                if (str_contains($fridgeItem, $polishName) || str_contains($polishName, $fridgeItem)) {
+                    $found = true;
+                    break;
+                }
+            }
+
+            if (!$found) {
+                $missingIngredients[] = ucfirst($polishName);
+            }
+        }
+
+        return view('meal-plans.show', compact('mealPlan', 'totalProtein', 'totalCarbs', 'totalFat', 'missingIngredients'));
     }
 
     /**

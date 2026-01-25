@@ -75,17 +75,26 @@ class MealPlannerService
                     return null;
                 }
 
-                // Enrich recipes with nutrition information (for top 15 recipes to optimize API calls)
-                $enrichedRecipes = $this->enrichRecipesWithNutrition(array_slice($recipes, 0, 15));
+                // Shuffle for variety and enrich more recipes for better selection
+                shuffle($recipes);
+                $enrichedRecipes = $this->enrichRecipesWithNutrition(array_slice($recipes, 0, 30));
 
                 if (empty($enrichedRecipes)) {
                     Log::error('Failed to enrich recipes with nutrition data');
                     return null;
                 }
 
+                // Filter recipes by calorie ranges to ensure they fit within daily budget
+                $filteredRecipes = $this->filterRecipesByCalorieRanges($enrichedRecipes, $targetCalories);
+
+                if (empty($filteredRecipes)) {
+                    Log::warning('No recipes found within calorie ranges, using all enriched recipes');
+                    $filteredRecipes = $enrichedRecipes;
+                }
+
                 // Use VertexAI to select the best 3 recipes
                 $selectedRecipeIds = $this->vertexAIService->selectBestRecipes(
-                    $enrichedRecipes,
+                    $filteredRecipes,
                     $preferencesArray,
                     $recentRecipeIds,
                     $fridgeItems
@@ -118,10 +127,11 @@ class MealPlannerService
                 $recipes = $this->spoonacularService->complexSearch([
                     'diet' => $preferencesArray['diet_type'] !== 'omnivore' ? $preferencesArray['diet_type'] : null,
                     'intolerances' => !empty($preferencesArray['allergies']) ? implode(',', $preferencesArray['allergies']) : null,
-                    'number' => 15,
+                    'number' => 30,
                     'addRecipeNutrition' => true,
                     'addRecipeInformation' => true,
                     'sort' => 'random',
+                    'offset' => rand(0, 100), // Add randomization to avoid same results
                 ]);
 
                 if (isset($recipes['error']) || !isset($recipes['results'])) {
@@ -162,17 +172,27 @@ class MealPlannerService
                     ];
                 }, $recipes['results']);
 
+                // Filter recipes by calorie ranges to ensure they fit within daily budget
+                $filteredRecipes = $this->filterRecipesByCalorieRanges($formattedRecipes, $targetCalories);
+
+                if (empty($filteredRecipes)) {
+                    Log::warning('No recipes found within calorie ranges, using all formatted recipes');
+                    $filteredRecipes = $formattedRecipes;
+                }
+
                 // Use VertexAI to select best recipes
                 $selectedRecipeIds = $this->vertexAIService->selectBestRecipes(
-                    $formattedRecipes,
+                    $filteredRecipes,
                     $preferencesArray,
                     $recentRecipeIds,
                     []
                 );
 
                 if (empty($selectedRecipeIds)) {
-                    // Fallback to first 3 recipes
-                    $selectedRecipeIds = array_slice(array_column($formattedRecipes, 'id'), 0, 3);
+                    // Fallback to random 3 recipes for variety
+                    $shuffled = $formattedRecipes;
+                    shuffle($shuffled);
+                    $selectedRecipeIds = array_slice(array_column($shuffled, 'id'), 0, 3);
                 }
 
                 $selectedRecipes = array_filter($formattedRecipes, function($recipe) use ($selectedRecipeIds) {
@@ -226,14 +246,95 @@ class MealPlannerService
             return null;
         }
 
+        // Work with first 3 recipes
+        $selectedRecipes = array_slice($recipes, 0, 3);
+        $selectedRecipes = array_values($selectedRecipes); // Re-index array
+
         // Translate recipe titles from English to Polish using VertexAI
-        $recipeTitles = array_map(fn($recipe) => $recipe['title'], array_slice($recipes, 0, 3));
+        $recipeTitles = array_map(fn($recipe) => $recipe['title'], $selectedRecipes);
         $translatedTitles = $this->vertexAIService->translateToPolish($recipeTitles);
 
-        // Replace titles with translated versions
-        foreach (array_slice($recipes, 0, 3) as $index => &$recipe) {
-            if (isset($translatedTitles[$index])) {
-                $recipe['title'] = $translatedTitles[$index];
+        // Collect all unique ingredients and steps from all recipes for translation
+        $allIngredients = [];
+        $allSteps = [];
+        $recipeIngredientMaps = []; // Store which ingredients belong to which recipe
+        $recipeStepMaps = []; // Store which steps belong to which recipe
+
+        for ($recipeIndex = 0; $recipeIndex < count($selectedRecipes); $recipeIndex++) {
+            // Update title
+            if (isset($translatedTitles[$recipeIndex])) {
+                $selectedRecipes[$recipeIndex]['title'] = $translatedTitles[$recipeIndex];
+            }
+
+            // Ensure recipe has full data
+            $recipeData = $selectedRecipes[$recipeIndex]['full_recipe_data'] ?? null;
+            if (!$recipeData) {
+                $recipeData = $this->spoonacularService->getRecipeInformation($selectedRecipes[$recipeIndex]['id']);
+                $selectedRecipes[$recipeIndex]['full_recipe_data'] = $recipeData;
+            }
+
+            // Extract ingredient names for translation
+            $recipeIngredientMaps[$recipeIndex] = [];
+            if (isset($recipeData['extendedIngredients']) && is_array($recipeData['extendedIngredients'])) {
+                foreach ($recipeData['extendedIngredients'] as $ingredient) {
+                    $ingredientName = $ingredient['name'] ?? $ingredient['original'] ?? null;
+                    if ($ingredientName) {
+                        $allIngredients[] = $ingredientName;
+                        $recipeIngredientMaps[$recipeIndex][] = count($allIngredients) - 1; // Store index
+                    }
+                }
+            }
+
+            // Extract steps for translation
+            $recipeStepMaps[$recipeIndex] = [];
+            if (isset($recipeData['analyzedInstructions'][0]['steps']) && is_array($recipeData['analyzedInstructions'][0]['steps'])) {
+                foreach ($recipeData['analyzedInstructions'][0]['steps'] as $step) {
+                    if (isset($step['step'])) {
+                        $allSteps[] = $step['step'];
+                        $recipeStepMaps[$recipeIndex][] = count($allSteps) - 1; // Store index
+                    }
+                }
+            }
+        }
+
+        // Translate all ingredients and steps at once (more efficient)
+        $translatedIngredients = [];
+        if (!empty($allIngredients)) {
+            $translatedIngredients = $this->vertexAIService->translateToPolish($allIngredients);
+        }
+
+        $translatedSteps = [];
+        if (!empty($allSteps)) {
+            $translatedSteps = $this->vertexAIService->translateToPolish($allSteps);
+        }
+
+        // Add Polish translations to each recipe's ingredient and step data
+        for ($recipeIndex = 0; $recipeIndex < count($selectedRecipes); $recipeIndex++) {
+            // Translate ingredients
+            if (isset($selectedRecipes[$recipeIndex]['full_recipe_data']['extendedIngredients'])) {
+                $ingredientIndexes = $recipeIngredientMaps[$recipeIndex] ?? [];
+
+                foreach ($selectedRecipes[$recipeIndex]['full_recipe_data']['extendedIngredients'] as $ingredientIndex => &$ingredient) {
+                    if (isset($ingredientIndexes[$ingredientIndex])) {
+                        $globalIndex = $ingredientIndexes[$ingredientIndex];
+                        // Add Polish translation to ingredient data
+                        $ingredient['name_pl'] = $translatedIngredients[$globalIndex] ?? $ingredient['name'];
+                        $ingredient['original_pl'] = $translatedIngredients[$globalIndex] ?? $ingredient['original'];
+                    }
+                }
+            }
+
+            // Translate cooking steps
+            if (isset($selectedRecipes[$recipeIndex]['full_recipe_data']['analyzedInstructions'][0]['steps'])) {
+                $stepIndexes = $recipeStepMaps[$recipeIndex] ?? [];
+
+                foreach ($selectedRecipes[$recipeIndex]['full_recipe_data']['analyzedInstructions'][0]['steps'] as $stepIndex => &$step) {
+                    if (isset($stepIndexes[$stepIndex])) {
+                        $globalIndex = $stepIndexes[$stepIndex];
+                        // Add Polish translation to step data
+                        $step['step_pl'] = $translatedSteps[$globalIndex] ?? $step['step'];
+                    }
+                }
             }
         }
 
@@ -247,32 +348,32 @@ class MealPlannerService
         $mealTypes = ['breakfast', 'lunch', 'dinner'];
         $caloriesPerMeal = $targetCalories / 3;
 
-        foreach (array_slice($recipes, 0, 3) as $index => $recipe) {
-            // Check if recipe already has full nutrition data
-            if (isset($recipe['calories']) && isset($recipe['full_recipe_data'])) {
-                // Use existing full recipe data
-                $calories = $recipe['calories'];
-                $recipeInfo = $recipe['full_recipe_data'];
-            } else {
-                // Fetch full recipe information from API
-                $recipeInfo = $this->spoonacularService->getRecipeInformation($recipe['id']);
+        foreach ($selectedRecipes as $index => $recipe) {
+            // Use the full recipe data with translated ingredients and steps
+            $recipeInfo = $recipe['full_recipe_data'] ?? [];
 
-                // Extract calories
-                $calories = 0;
-                if (isset($recipeInfo['nutrition']['nutrients'])) {
-                    foreach ($recipeInfo['nutrition']['nutrients'] as $nutrient) {
-                        if ($nutrient['name'] === 'Calories') {
-                            $calories = $nutrient['amount'];
-                            break;
-                        }
+            // Extract calories
+            $calories = $recipe['calories'] ?? 0;
+
+            if ($calories == 0 && isset($recipeInfo['nutrition']['nutrients'])) {
+                foreach ($recipeInfo['nutrition']['nutrients'] as $nutrient) {
+                    if ($nutrient['name'] === 'Calories') {
+                        $calories = $nutrient['amount'];
+                        break;
                     }
                 }
-
-                // Fallback to estimated calories
-                if ($calories == 0) {
-                    $calories = $caloriesPerMeal;
-                }
             }
+
+            // Fallback to estimated calories
+            if ($calories == 0) {
+                $calories = $caloriesPerMeal;
+            }
+
+            // Merge original recipe data (with missedIngredients) with full recipe info
+            $mergedRecipeData = array_merge($recipeInfo, [
+                'missedIngredients' => $recipe['missedIngredients'] ?? [],
+                'usedIngredients' => $recipe['usedIngredients'] ?? [],
+            ]);
 
             MealPlanRecipe::create([
                 'meal_plan_id' => $mealPlan->id,
@@ -280,13 +381,26 @@ class MealPlannerService
                 'meal_type' => $mealTypes[$index] ?? 'snack',
                 'recipe_title' => $recipe['title'],
                 'calories' => $calories,
-                'recipe_data' => $recipeInfo,
+                'recipe_data' => $mergedRecipeData,
             ]);
 
             $totalCalories += $calories;
         }
 
         $mealPlan->update(['total_calories' => $totalCalories]);
+
+        // Validate calorie target
+        $calorieDeviation = abs($totalCalories - $targetCalories);
+        $deviationPercent = ($calorieDeviation / $targetCalories) * 100;
+
+        if ($deviationPercent > 20) {
+            Log::warning("Meal plan calorie deviation exceeds 20%", [
+                'target_calories' => $targetCalories,
+                'actual_calories' => $totalCalories,
+                'deviation' => $calorieDeviation,
+                'deviation_percent' => round($deviationPercent, 1)
+            ]);
+        }
 
         return $mealPlan;
     }
@@ -311,6 +425,37 @@ class MealPlannerService
         }
 
         return 'snack';
+    }
+
+    /**
+     * Filter recipes to only include those within appropriate calorie ranges.
+     * This ensures the AI can only select recipes that fit within the daily calorie budget.
+     *
+     * @param array $recipes
+     * @param int $targetCalories
+     * @return array
+     */
+    protected function filterRecipesByCalorieRanges(array $recipes, int $targetCalories): array
+    {
+        // Define acceptable calorie ranges - wide enough for variety but eliminate extremes
+        // Realistic meal ranges:
+        // - Breakfast: 300-900 kcal (12-36% of 2500)
+        // - Lunch: 400-1100 kcal (16-44% of 2500)
+        // - Dinner: 400-1100 kcal (16-44% of 2500)
+        $minCaloriesPerMeal = round($targetCalories * 0.15); // 15% minimum
+        $maxCaloriesPerMeal = round($targetCalories * 0.50); // 50% maximum
+
+        $filteredRecipes = array_filter($recipes, function($recipe) use ($minCaloriesPerMeal, $maxCaloriesPerMeal) {
+            // Skip recipes without calorie data
+            if (!isset($recipe['calories']) || $recipe['calories'] <= 0) {
+                return false;
+            }
+
+            // Only include recipes within the acceptable range
+            return $recipe['calories'] >= $minCaloriesPerMeal && $recipe['calories'] <= $maxCaloriesPerMeal;
+        });
+
+        return array_values($filteredRecipes);
     }
 
     /**

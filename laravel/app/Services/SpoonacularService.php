@@ -29,7 +29,7 @@ class SpoonacularService
             $params = [
                 'apiKey' => $this->apiKey,
                 'ingredients' => implode(',', $ingredients),
-                'number' => 10,
+                'number' => 50, // Increased for more variety
                 'ranking' => 2, // Maximize used ingredients
                 'ignorePantry' => true,
             ];

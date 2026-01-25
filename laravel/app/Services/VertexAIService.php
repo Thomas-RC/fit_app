@@ -340,8 +340,8 @@ class VertexAIService
             // Build the prompt
             $prompt = $this->buildRecipeSelectionPrompt($recipeList, $preferences, $recentRecipeIds, $fridgeItems);
 
-            // Call Gemini API
-            $response = $this->callGeminiText($prompt);
+            // Call Gemini API with higher temperature for more variety
+            $response = $this->callGeminiText($prompt, 0.9);
 
             if (isset($response['error'])) {
                 Log::warning('VertexAI selection failed, falling back to random selection');
@@ -375,56 +375,59 @@ class VertexAIService
     {
         $dietType = $preferences['diet_type'] ?? 'omnivore';
         $targetCalories = $preferences['daily_calories'] ?? 2000;
-        $allergies = !empty($preferences['allergies']) ? implode(', ', $preferences['allergies']) : 'none';
+        $allergies = !empty($preferences['allergies']) ? implode(', ', $preferences['allergies']) : 'brak';
 
-        $prompt = "You are a nutritionist AI helping to create a balanced daily meal plan.\n\n";
-        $prompt .= "USER PROFILE:\n";
-        $prompt .= "- Diet type: {$dietType}\n";
-        $prompt .= "- Target daily calories: {$targetCalories} kcal\n";
-        $prompt .= "- Allergies/Intolerances: {$allergies}\n";
+        $prompt = "Jesteś AI dietetykiem pomagającym stworzyć zrównoważony dzienny plan posiłków.\n\n";
+        $prompt .= "PROFIL UŻYTKOWNIKA:\n";
+        $prompt .= "- Typ diety: {$dietType}\n";
+        $prompt .= "- Docelowa dzienna kaloryczność: {$targetCalories} kcal\n";
+        $prompt .= "- Alergie/Nietolerancje: {$allergies}\n";
 
         if (!empty($fridgeItems)) {
-            $prompt .= "- Available ingredients: " . implode(', ', array_slice($fridgeItems, 0, 10)) . "\n";
+            $prompt .= "- Dostępne składniki: " . implode(', ', array_slice($fridgeItems, 0, 10)) . "\n";
         }
 
-        $prompt .= "\nRECENTLY USED RECIPES (avoid these): ";
-        $prompt .= !empty($recentRecipeIds) ? implode(', ', $recentRecipeIds) : 'none';
+        $prompt .= "\nOSTATNIO UŻYTE PRZEPISY (unikaj ich): ";
+        $prompt .= !empty($recentRecipeIds) ? implode(', ', $recentRecipeIds) : 'brak';
         $prompt .= "\n\n";
 
-        $prompt .= "AVAILABLE RECIPES:\n";
+        $prompt .= "DOSTĘPNE PRZEPISY:\n";
         foreach ($recipeList as $idx => $recipe) {
             $prompt .= ($idx + 1) . ". ID: {$recipe['id']} - \"{$recipe['title']}\"\n";
 
             if ($recipe['calories'] !== null) {
-                $prompt .= "   Calories: {$recipe['calories']} kcal\n";
+                $prompt .= "   Kalorie: {$recipe['calories']} kcal\n";
             }
 
             if (!empty($recipe['usedIngredients'])) {
-                $prompt .= "   Uses: " . implode(', ', $recipe['usedIngredients']) . "\n";
+                $prompt .= "   Wykorzystuje: " . implode(', ', $recipe['usedIngredients']) . "\n";
             }
             if (!empty($recipe['missedIngredients'])) {
-                $prompt .= "   Missing: " . implode(', ', $recipe['missedIngredients']) . "\n";
+                $prompt .= "   Brakuje: " . implode(', ', $recipe['missedIngredients']) . "\n";
             }
-            $prompt .= "   Popularity: {$recipe['likes']} likes\n\n";
+            $prompt .= "   Popularność: {$recipe['likes']} polubień\n\n";
         }
 
-        $prompt .= "\nTASK:\n";
-        $prompt .= "Select exactly 3 recipes for a daily meal plan (breakfast, lunch, dinner).\n\n";
-        $prompt .= "CRITERIA (in order of importance):\n";
-        $prompt .= "1. CALORIE BALANCE: The 3 recipes together should total close to {$targetCalories} kcal (±200 kcal acceptable)\n";
-        $prompt .= "   - Breakfast: 25-30% of daily calories (~" . round($targetCalories * 0.275) . " kcal)\n";
-        $prompt .= "   - Lunch: 35-40% of daily calories (~" . round($targetCalories * 0.375) . " kcal)\n";
-        $prompt .= "   - Dinner: 30-35% of daily calories (~" . round($targetCalories * 0.325) . " kcal)\n";
-        $prompt .= "2. Maximize use of available ingredients\n";
-        $prompt .= "3. Create variety - different cooking methods, ingredients, and cuisines\n";
-        $prompt .= "4. Avoid recently used recipes (listed above)\n";
-        $prompt .= "5. Balance nutrition across the day (protein, carbs, healthy fats)\n";
-        $prompt .= "6. Consider appropriate meal types (lighter breakfast, substantial lunch/dinner)\n";
-        $prompt .= "7. Prefer recipes with higher popularity when other factors are equal\n\n";
+        $prompt .= "\nZADANIE:\n";
+        $prompt .= "Wybierz dokładnie 3 przepisy na dzienny plan posiłków: śniadanie, obiad, kolacja.\n\n";
+        $prompt .= "KRYTYCZNE WYMAGANIA:\n";
+        $prompt .= "1. BILANS KALORYCZNY (OBOWIĄZKOWY): 3 przepisy razem MUSZĄ mieć łącznie między " . ($targetCalories - 150) . " a " . ($targetCalories + 50) . " kcal.\n";
+        $prompt .= "   To jest NAJWYŻSZY PRIORYTET. Wybierz przepisy tworzące ZRÓWNOWAŻONY rozkład:\n";
+        $prompt .= "   - Śniadanie: 20-30% dziennych kalorii (~" . round($targetCalories * 0.25) . " kcal zalecane)\n";
+        $prompt .= "   - Obiad: 35-40% dziennych kalorii (~" . round($targetCalories * 0.375) . " kcal zalecane)\n";
+        $prompt .= "   - Kolacja: 30-35% dziennych kalorii (~" . round($targetCalories * 0.325) . " kcal zalecane)\n";
+        $prompt .= "   WAŻNE: Staraj się osiągnąć zalecane wartości powyżej, nie skrajne wartości minimalne czy maksymalne.\n\n";
+        $prompt .= "DRUGORZĘDNE KRYTERIA (tylko po spełnieniu wymogu kalorycznego):\n";
+        $prompt .= "2. Maksymalizuj wykorzystanie dostępnych składników\n";
+        $prompt .= "3. Twórz RÓŻNORODNOŚĆ - różne metody gotowania, składniki i kuchnie\n";
+        $prompt .= "4. UNIKAJ ostatnio użytych przepisów (wymienionych powyżej) - to jest ważne!\n";
+        $prompt .= "5. Równoważ odżywianie w ciągu dnia (białko, węglowodany, zdrowe tłuszcze)\n";
+        $prompt .= "6. Uwzględnij odpowiednie typy posiłków (lżejsze śniadanie, obfitszy obiad/kolacja)\n";
+        $prompt .= "7. Preferuj przepisy z wyższą popularnością gdy inne czynniki są równe\n\n";
 
-        $prompt .= "Return ONLY a JSON array of 3 recipe IDs in order [breakfast_id, lunch_id, dinner_id].\n";
-        $prompt .= "Example format: [123456, 789012, 345678]\n";
-        $prompt .= "Return ONLY the JSON array, no other text.";
+        $prompt .= "Zwróć TYLKO tablicę JSON z 3 ID przepisów w kolejności [id_sniadanie, id_obiad, id_kolacja].\n";
+        $prompt .= "Przykładowy format: [123456, 789012, 345678]\n";
+        $prompt .= "Zwróć TYLKO tablicę JSON, bez żadnego innego tekstu.";
 
         return $prompt;
     }
@@ -432,7 +435,7 @@ class VertexAIService
     /**
      * Call Gemini for text-only prompt.
      */
-    protected function callGeminiText(string $prompt): array
+    protected function callGeminiText(string $prompt, float $temperature = 0.7): array
     {
         if (!$this->projectId) {
             Log::warning('Vertex AI not configured');
@@ -458,7 +461,7 @@ class VertexAIService
                     ]
                 ],
                 'generationConfig' => [
-                    'temperature' => 0.7,
+                    'temperature' => $temperature,
                     'topK' => 40,
                     'topP' => 0.95,
                     'maxOutputTokens' => 1024,
