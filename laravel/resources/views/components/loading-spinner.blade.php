@@ -1,4 +1,4 @@
-@props(['size' => 'md', 'text' => 'Loading...'])
+@props(['size' => 'md', 'text' => 'Ładowanie...'])
 
 @php
     $sizes = [

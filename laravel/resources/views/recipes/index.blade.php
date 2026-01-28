@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Browse Recipes')
+@section('title', 'Przeglądaj przepisy')
 
 @section('content')
 <div class="py-12">
@@ -9,20 +9,20 @@
             <!-- Sidebar Filters -->
             <div class="lg:w-1/4 mb-8 lg:mb-0">
                 <div class="bg-white rounded-lg shadow-lg p-6 sticky top-4">
-                    <h2 class="text-xl font-bold text-gray-900 mb-6">Filters</h2>
+                    <h2 class="text-xl font-bold text-gray-900 mb-6">Filtry</h2>
 
                     <form method="GET" action="{{ route('recipes.index') }}" class="space-y-6">
                         <!-- Search Query -->
                         <div>
                             <label for="query" class="block text-sm font-medium text-gray-700 mb-2">
-                                Search
+                                Szukaj
                             </label>
                             <input
                                 type="text"
                                 name="query"
                                 id="query"
                                 value="{{ $validated['query'] ?? '' }}"
-                                placeholder="e.g., pasta, chicken..."
+                                placeholder="np. makaron, kurczak..."
                                 class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                             >
                         </div>
@@ -30,16 +30,16 @@
                         <!-- Diet Type -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Diet
+                                Dieta
                             </label>
                             <div class="space-y-2">
                                 @php
                                     $diets = [
-                                        '' => 'Any',
-                                        'vegetarian' => 'Vegetarian',
-                                        'vegan' => 'Vegan',
+                                        '' => 'Dowolna',
+                                        'vegetarian' => 'Wegetariańska',
+                                        'vegan' => 'Wegańska',
                                         'ketogenic' => 'Keto',
-                                        'gluten free' => 'Gluten Free',
+                                        'gluten free' => 'Bezglutenowa',
                                         'paleo' => 'Paleo',
                                     ];
                                 @endphp
@@ -61,14 +61,14 @@
                         <!-- Max Calories -->
                         <div>
                             <label for="maxCalories" class="block text-sm font-medium text-gray-700 mb-2">
-                                Max Calories
+                                Maks. kalorie
                             </label>
                             <input
                                 type="number"
                                 name="maxCalories"
                                 id="maxCalories"
                                 value="{{ $validated['maxCalories'] ?? '' }}"
-                                placeholder="e.g., 500"
+                                placeholder="np. 500"
                                 min="100"
                                 max="2000"
                                 step="50"
@@ -79,14 +79,14 @@
                         <!-- Cuisine -->
                         <div>
                             <label for="cuisine" class="block text-sm font-medium text-gray-700 mb-2">
-                                Cuisine
+                                Kuchnia
                             </label>
                             <select
                                 name="cuisine"
                                 id="cuisine"
                                 class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                             >
-                                <option value="">Any Cuisine</option>
+                                <option value="">Dowolna kuchnia</option>
                                 @php
                                     $cuisines = ['italian', 'chinese', 'mexican', 'indian', 'american', 'japanese', 'thai', 'french', 'mediterranean', 'greek'];
                                 @endphp
@@ -104,26 +104,26 @@
                                 type="submit"
                                 class="flex-1 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-md hover:shadow-lg transition font-semibold text-sm"
                             >
-                                Apply Filters
+                                Zastosuj filtry
                             </button>
                             <a
                                 href="{{ route('recipes.index') }}"
                                 class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm"
                             >
-                                Clear
+                                Wyczyść
                             </a>
                         </div>
                     </form>
 
                     <!-- Quick Links -->
                     <div class="mt-6 pt-6 border-t">
-                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Quick Links</h3>
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Szybkie linki</h3>
                         <div class="space-y-2">
                             <a href="{{ route('recipes.random') }}" class="block text-sm text-emerald-600 hover:text-emerald-700">
-                                🎲 Random Recipes
+                                🎲 Losowe przepisy
                             </a>
                             <a href="{{ route('meal-plans.create') }}" class="block text-sm text-emerald-600 hover:text-emerald-700">
-                                ✨ Generate Meal Plan
+                                ✨ Generuj plan posiłków
                             </a>
                         </div>
                     </div>
@@ -134,12 +134,12 @@
             <div class="lg:w-3/4">
                 <!-- Header -->
                 <div class="mb-8">
-                    <h1 class="text-3xl font-bold text-gray-900">Browse Recipes</h1>
+                    <h1 class="text-3xl font-bold text-gray-900">Przeglądaj przepisy</h1>
                     <p class="text-gray-600 mt-2">
                         @if(isset($totalResults))
-                            Found {{ number_format($totalResults) }} recipes
+                            Znaleziono {{ number_format($totalResults) }} przepisów
                         @else
-                            Discover delicious recipes
+                            Odkryj pyszne przepisy
                         @endif
                     </p>
                 </div>
@@ -216,17 +216,17 @@
                         <div class="flex justify-center items-center gap-2">
                             @if($offset > 0)
                                 <a href="{{ route('recipes.index', array_merge($validated, ['offset' => max(0, $offset - $perPage)])) }}" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
-                                    Previous
+                                    Poprzednia
                                 </a>
                             @endif
 
                             <span class="px-4 py-2 text-gray-600">
-                                Page {{ floor($offset / $perPage) + 1 }} of {{ ceil($totalResults / $perPage) }}
+                                Strona {{ floor($offset / $perPage) + 1 }} z {{ ceil($totalResults / $perPage) }}
                             </span>
 
                             @if($offset + $perPage < $totalResults)
                                 <a href="{{ route('recipes.index', array_merge($validated, ['offset' => $offset + $perPage])) }}" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
-                                    Next
+                                    Następna
                                 </a>
                             @endif
                         </div>
@@ -235,10 +235,10 @@
                     <!-- Empty State -->
                     <div class="bg-white rounded-lg shadow p-12 text-center">
                         <div class="text-6xl mb-4">🔍</div>
-                        <h3 class="text-xl font-semibold text-gray-900 mb-2">No Recipes Found</h3>
-                        <p class="text-gray-600 mb-6">Try adjusting your filters or search terms</p>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Nie znaleziono przepisów</h3>
+                        <p class="text-gray-600 mb-6">Spróbuj dostosować filtry lub wyszukiwane frazy</p>
                         <a href="{{ route('recipes.index') }}" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-md hover:shadow-lg transition font-semibold">
-                            View All Recipes
+                            Zobacz wszystkie przepisy
                         </a>
                     </div>
                 @endif

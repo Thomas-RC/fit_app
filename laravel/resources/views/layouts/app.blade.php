@@ -33,6 +33,34 @@
         .bg-fit-gradient {
             background: linear-gradient(135deg, #6dd5a7, #3cb371);
         }
+
+        /* Toast Notifications */
+        .toast-enter {
+            animation: slideInRight 0.3s ease-out;
+        }
+        .toast-exit {
+            animation: slideOutRight 0.3s ease-in;
+        }
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
     </style>
 
     @stack('styles')
@@ -162,6 +190,109 @@
     </div>
 
     @stack('scripts')
+
+    <!-- Toast Notifications Container -->
+    <div x-data class="fixed top-4 right-4 z-50 space-y-3 max-w-sm w-full pointer-events-none px-4">
+        <template x-for="toast in $store.toast.toasts" :key="toast.id">
+            <div
+                x-show="toast.show"
+                x-transition:enter="toast-enter"
+                x-transition:leave="toast-exit"
+                :class="{
+                    'bg-emerald-50 border-emerald-200': toast.type === 'success',
+                    'bg-red-50 border-red-200': toast.type === 'error',
+                    'bg-blue-50 border-blue-200': toast.type === 'info'
+                }"
+                class="pointer-events-auto border rounded-lg shadow-lg p-4 flex items-start gap-3"
+            >
+                <!-- Icon -->
+                <div class="flex-shrink-0">
+                    <svg x-show="toast.type === 'success'" class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <svg x-show="toast.type === 'error'" class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <svg x-show="toast.type === 'info'" class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+
+                <!-- Message -->
+                <div class="flex-1 min-w-0">
+                    <p
+                        x-text="toast.message"
+                        :class="{
+                            'text-emerald-800': toast.type === 'success',
+                            'text-red-800': toast.type === 'error',
+                            'text-blue-800': toast.type === 'info'
+                        }"
+                        class="text-sm font-medium break-words"
+                    ></p>
+                </div>
+
+                <!-- Close Button -->
+                <button
+                    @click="$store.toast.remove(toast.id)"
+                    :class="{
+                        'text-emerald-600 hover:text-emerald-700': toast.type === 'success',
+                        'text-red-600 hover:text-red-700': toast.type === 'error',
+                        'text-blue-600 hover:text-blue-700': toast.type === 'info'
+                    }"
+                    class="flex-shrink-0 transition-colors"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </template>
+    </div>
+
+    <script>
+        // Initialize Alpine Store for Toast Notifications
+        document.addEventListener('alpine:init', () => {
+            Alpine.store('toast', {
+                toasts: [],
+                nextId: 1,
+
+                add(message, type = 'info', duration = 5000) {
+                    const id = this.nextId++;
+                    const toast = {
+                        id: id,
+                        message: message,
+                        type: type,
+                        show: true
+                    };
+
+                    this.toasts.push(toast);
+
+                    // Auto remove after duration
+                    setTimeout(() => {
+                        this.remove(id);
+                    }, duration);
+                },
+
+                remove(id) {
+                    const index = this.toasts.findIndex(t => t.id === id);
+                    if (index > -1) {
+                        this.toasts[index].show = false;
+                        // Remove from array after animation completes
+                        setTimeout(() => {
+                            this.toasts = this.toasts.filter(t => t.id !== id);
+                        }, 300);
+                    }
+                }
+            });
+        });
+
+        // Global function to show toasts from anywhere in the app
+        window.showToast = function(message, type = 'info', duration = 5000) {
+            if (Alpine.store('toast')) {
+                Alpine.store('toast').add(message, type, duration);
+            }
+        };
+    </script>
 
     <!-- Project Disclaimer Banner -->
     <div x-data="{ show: !localStorage.getItem('disclaimerClosed') }" x-show="show" x-cloak

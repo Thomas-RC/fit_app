@@ -8,6 +8,8 @@
     filter: 'all',
     search: '',
     selectedItems: [],
+    confirmDelete: null,
+    confirmDeleteAll: false,
     items: {{ Js::from($items->map(fn($item) => [
         'id' => $item->id,
         'product_name' => $item->product_name,
@@ -64,7 +66,7 @@
                 @if($totalItems > 0)
                     <button
                         x-show="selectedItems.length > 0"
-                        @click="if(confirm('Czy na pewno chcesz usunąć zaznaczone produkty?')) {
+                        @click="if(confirmDelete === 'selected') {
                             const form = document.getElementById('delete-selected-form');
                             selectedItems.forEach(id => {
                                 const input = document.createElement('input');
@@ -74,20 +76,27 @@
                                 form.appendChild(input);
                             });
                             form.submit();
+                        } else {
+                            showToast('Kliknij ponownie aby potwierdzić usunięcie', 'error', 4000);
+                            confirmDelete = 'selected';
+                            setTimeout(() => confirmDelete = null, 5000);
                         }"
+                        :class="confirmDelete === 'selected' ? 'bg-red-700' : ''"
                         class="btn-fit-danger"
                     >
-                        🗑️ Usuń zaznaczone (<span x-text="selectedItems.length"></span>)
+                        <span x-show="confirmDelete !== 'selected'">🗑️ Usuń zaznaczone (<span x-text="selectedItems.length"></span>)</span>
+                        <span x-show="confirmDelete === 'selected'">⚠️ Kliknij ponownie aby potwierdzić (<span x-text="selectedItems.length"></span>)</span>
                     </button>
 
-                    <form id="delete-all-form" action="{{ route('fridge.delete-all') }}" method="POST" class="inline">
+                    <form id="delete-all-form" action="{{ route('fridge.delete-all') }}" method="POST" class="inline" @submit.prevent="if(confirmDeleteAll) { $el.submit(); } else { showToast('Kliknij ponownie aby potwierdzić usunięcie wszystkich produktów', 'error', 4000); confirmDeleteAll = true; setTimeout(() => confirmDeleteAll = false, 5000); }">
                         @csrf
                         <button
                             type="submit"
-                            onclick="return confirm('Czy na pewno chcesz usunąć wszystkie produkty z lodówki?')"
+                            :class="confirmDeleteAll ? 'bg-red-700' : ''"
                             class="btn-fit-danger"
                         >
-                            🗑️ Usuń wszystko
+                            <span x-show="!confirmDeleteAll">🗑️ Usuń wszystko</span>
+                            <span x-show="confirmDeleteAll">⚠️ Kliknij ponownie aby potwierdzić</span>
                         </button>
                     </form>
                 @endif
@@ -261,15 +270,16 @@
                             >
                                 Edytuj
                             </a>
-                            <form :action="`/fridge/${item.id}`" method="POST" class="flex-1">
+                            <form :action="`/fridge/${item.id}`" method="POST" class="flex-1" @submit.prevent="if(confirmDelete === item.id) { $el.submit(); } else { showToast('Kliknij ponownie aby potwierdzić usunięcie', 'error', 4000); confirmDelete = item.id; setTimeout(() => confirmDelete = null, 5000); }">
                                 @csrf
                                 @method('DELETE')
                                 <button
                                     type="submit"
-                                    onclick="return confirm('Czy na pewno chcesz usunąć ten produkt?')"
-                                    class="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                                    :class="confirmDelete === item.id ? 'bg-red-700' : 'bg-red-600'"
+                                    class="w-full px-4 py-2 text-white rounded-md hover:bg-red-700 transition"
                                 >
-                                    Usuń
+                                    <span x-show="confirmDelete !== item.id">Usuń</span>
+                                    <span x-show="confirmDelete === item.id">⚠️ Potwierdź</span>
                                 </button>
                             </form>
                         </div>
@@ -346,15 +356,16 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <a :href="`/fridge/${item.id}/edit`" class="text-fit-green-600 hover:text-fit-green-900 mr-4">Edytuj</a>
-                                    <form :action="`/fridge/${item.id}`" method="POST" class="inline">
+                                    <form :action="`/fridge/${item.id}`" method="POST" class="inline" @submit.prevent="if(confirmDelete === item.id) { $el.submit(); } else { showToast('Kliknij ponownie aby potwierdzić usunięcie', 'error', 4000); confirmDelete = item.id; setTimeout(() => confirmDelete = null, 5000); }">
                                         @csrf
                                         @method('DELETE')
                                         <button
                                             type="submit"
-                                            onclick="return confirm('Czy na pewno chcesz usunąć ten produkt?')"
-                                            class="text-red-600 hover:text-red-900"
+                                            :class="confirmDelete === item.id ? 'text-red-900 font-bold' : 'text-red-600'"
+                                            class="hover:text-red-900"
                                         >
-                                            Usuń
+                                            <span x-show="confirmDelete !== item.id">Usuń</span>
+                                            <span x-show="confirmDelete === item.id">⚠️ Potwierdź</span>
                                         </button>
                                     </form>
                                 </td>

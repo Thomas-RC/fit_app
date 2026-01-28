@@ -28,10 +28,11 @@ class AdminController extends Controller
      */
     public function settings(): View
     {
-        // Get current settings
+        // Get current settings - use exists() to check if key exists in database
         $vertexAIConfigured = AppSetting::where('key', 'vertex_ai_project_id')->exists();
         $spoonacularConfigured = AppSetting::where('key', 'spoonacular_api_key')->exists();
 
+        // Get actual values using AppSetting::get() which handles decryption
         $vertexAIProjectId = AppSetting::get('vertex_ai_project_id');
         $vertexAIUpdatedAt = AppSetting::where('key', 'vertex_ai_credentials')->first()?->updated_at;
 
@@ -64,7 +65,7 @@ class AdminController extends Controller
             if (json_last_error() !== JSON_ERROR_NONE) {
                 return redirect()
                     ->route('admin.settings')
-                    ->with('error', 'Invalid JSON file: ' . json_last_error_msg());
+                    ->with('error', 'Nieprawidłowy plik JSON: ' . json_last_error_msg());
             }
 
             // Validate required fields in service account JSON
@@ -73,14 +74,14 @@ class AdminController extends Controller
                 if (!isset($credentials[$field])) {
                     return redirect()
                         ->route('admin.settings')
-                        ->with('error', "Service account JSON is missing required field: {$field}");
+                        ->with('error', "Plik JSON konta usługi nie zawiera wymaganego pola: {$field}");
                 }
             }
 
             if ($credentials['type'] !== 'service_account') {
                 return redirect()
                     ->route('admin.settings')
-                    ->with('error', 'JSON file must be a service account key.');
+                    ->with('error', 'Plik JSON musi być kluczem konta usługi.');
             }
 
             // Save credentials (encrypted)
@@ -91,13 +92,13 @@ class AdminController extends Controller
 
             return redirect()
                 ->route('admin.settings')
-                ->with('success', 'Vertex AI credentials updated successfully!');
+                ->with('success', 'Dane uwierzytelniające Vertex AI zostały zaktualizowane!');
 
         } catch (\Exception $e) {
             Log::error('Admin Vertex AI Update Error: ' . $e->getMessage());
             return redirect()
                 ->route('admin.settings')
-                ->with('error', 'Failed to update Vertex AI credentials: ' . $e->getMessage());
+                ->with('error', 'Nie udało się zaktualizować danych uwierzytelniających Vertex AI: ' . $e->getMessage());
         }
     }
 
@@ -107,14 +108,14 @@ class AdminController extends Controller
     public function testVertexAI(): JsonResponse
     {
         try {
-            // Get credentials
-            $credentialsJson = AppSetting::where('key', 'vertex_ai_credentials')->first()?->value;
-            $projectId = AppSetting::where('key', 'vertex_ai_project_id')->first()?->value;
+            // Get credentials using AppSetting::get() which handles decryption
+            $credentialsJson = AppSetting::get('vertex_ai_credentials');
+            $projectId = AppSetting::get('vertex_ai_project_id');
 
             if (!$credentialsJson || !$projectId) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Vertex AI is not configured. Please upload credentials first.',
+                    'message' => 'Vertex AI nie jest skonfigurowane. Najpierw prześlij dane uwierzytelniające.',
                 ]);
             }
 
@@ -124,20 +125,30 @@ class AdminController extends Controller
             if (json_last_error() !== JSON_ERROR_NONE) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid credentials format.',
+                    'message' => 'Nieprawidłowy format danych uwierzytelniających. Błąd: ' . json_last_error_msg(),
+                ]);
+            }
+
+            // Perform actual API test by making a simple request
+            $testResult = $this->vertexAIService->testConnection();
+
+            if (isset($testResult['error'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Połączenie z API nie powiodło się: ' . $testResult['error'],
                 ]);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Vertex AI credentials are configured correctly!',
+                'message' => 'Połączenie z Vertex AI udane! API działa poprawnie.',
             ]);
 
         } catch (\Exception $e) {
             Log::error('Admin Vertex AI Test Error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Connection test failed: ' . $e->getMessage(),
+                'message' => 'Test połączenia nie powiódł się: ' . $e->getMessage(),
             ]);
         }
     }
@@ -155,13 +166,13 @@ class AdminController extends Controller
 
             return redirect()
                 ->route('admin.settings')
-                ->with('success', 'Spoonacular API key updated successfully!');
+                ->with('success', 'Klucz API Spoonacular został zaktualizowany!');
 
         } catch (\Exception $e) {
             Log::error('Admin Spoonacular Update Error: ' . $e->getMessage());
             return redirect()
                 ->route('admin.settings')
-                ->with('error', 'Failed to update Spoonacular API key: ' . $e->getMessage());
+                ->with('error', 'Nie udało się zaktualizować klucza API Spoonacular: ' . $e->getMessage());
         }
     }
 
@@ -177,20 +188,20 @@ class AdminController extends Controller
             if (isset($result['error'])) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'API test failed: ' . $result['error'],
+                    'message' => 'Test API nie powiódł się: ' . $result['error'],
                 ]);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Spoonacular API is working correctly!',
+                'message' => 'API Spoonacular działa poprawnie!',
             ]);
 
         } catch (\Exception $e) {
             Log::error('Admin Spoonacular Test Error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Connection test failed: ' . $e->getMessage(),
+                'message' => 'Test połączenia nie powiódł się: ' . $e->getMessage(),
             ]);
         }
     }

@@ -14,7 +14,7 @@
 
             nextStep() {
                 if (this.step === 1 && !this.date) {
-                    alert('Proszę wybrać datę');
+                    showToast('Proszę wybrać datę', 'error', 4000);
                     return;
                 }
                 if (this.step < 3) {
@@ -57,12 +57,12 @@
                     } else {
                         const text = await response.text();
                         console.error('Generation failed:', text);
-                        alert('Nie udało się wygenerować planu posiłków. Spróbuj ponownie.');
+                        showToast('Nie udało się wygenerować planu posiłków. Spróbuj ponownie.', 'error', 6000);
                         this.generating = false;
                     }
                 } catch (error) {
                     console.error('Error:', error);
-                    alert('Wystąpił błąd. Spróbuj ponownie.');
+                    showToast('Wystąpił błąd podczas generowania planu: ' + error.message, 'error', 6000);
                     this.generating = false;
                 }
             },

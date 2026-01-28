@@ -1,6 +1,6 @@
 @props([
     'emoji' => '📭',
-    'title' => 'No items found',
+    'title' => 'Nie znaleziono elementów',
     'description' => '',
     'actionText' => null,
     'actionRoute' => null,

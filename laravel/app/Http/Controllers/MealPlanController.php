@@ -59,7 +59,7 @@ class MealPlanController extends Controller
         if ($existingPlan) {
             return redirect()
                 ->route('meal-plans.create')
-                ->with('error', 'You already have a meal plan for this date. Please choose a different date or delete the existing plan first.');
+                ->with('error', 'Posiadasz już plan posiłków na tę datę. Wybierz inną datę lub najpierw usuń istniejący plan.');
         }
 
         try {
@@ -72,7 +72,7 @@ class MealPlanController extends Controller
 
                 // Check if it's an API limit error
                 if (isset($result['api_limit']) && $result['api_limit']) {
-                    $errorMessage = 'Spoonacular API daily limit has been reached. Please try again tomorrow or upgrade your API plan.';
+                    $errorMessage = 'Został osiągnięty dzienny limit API Spoonacular. Spróbuj ponownie jutro lub ulepsz swój plan API.';
                 }
 
                 return redirect()
@@ -83,17 +83,17 @@ class MealPlanController extends Controller
             if (!$result) {
                 return redirect()
                     ->route('meal-plans.create')
-                    ->with('error', 'Failed to generate meal plan. Please try again or check your API configuration.');
+                    ->with('error', 'Nie udało się wygenerować planu posiłków. Spróbuj ponownie lub sprawdź konfigurację API.');
             }
 
             return redirect()
                 ->route('meal-plans.index')
-                ->with('success', 'Meal plan generated successfully!');
+                ->with('success', 'Plan posiłków został wygenerowany!');
 
         } catch (\Exception $e) {
             return redirect()
                 ->route('meal-plans.create')
-                ->with('error', 'An error occurred while generating the meal plan: ' . $e->getMessage());
+                ->with('error', 'Wystąpił błąd podczas generowania planu posiłków: ' . $e->getMessage());
         }
     }
 
@@ -186,6 +186,6 @@ class MealPlanController extends Controller
 
         return redirect()
             ->route('meal-plans.index')
-            ->with('success', 'Meal plan deleted successfully!');
+            ->with('success', 'Plan posiłków został usunięty!');
     }
 }

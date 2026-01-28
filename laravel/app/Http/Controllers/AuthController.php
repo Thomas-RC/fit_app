@@ -50,7 +50,7 @@ class AuthController extends Controller
 
             return redirect()->intended('/dashboard');
         } catch (\Exception $e) {
-            return redirect('/login')->with('error', 'Unable to login with Google. Please try again.');
+            return redirect('/login')->with('error', 'Nie udało się zalogować za pomocą Google. Spróbuj ponownie.');
         }
     }
 

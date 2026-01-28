@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Session Expired - FIT AI</title>
+    <title>Sesja wygasła - FIT AI</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-gradient-to-br from-emerald-50 via-teal-50 to-blue-50">
@@ -22,33 +22,33 @@
 
                 <!-- Heading -->
                 <h1 class="text-2xl font-bold text-gray-900 mb-3">
-                    Session Expired
+                    Sesja wygasła
                 </h1>
 
                 <!-- Description -->
                 <p class="text-gray-600 mb-6">
-                    Your session has expired or the page has already been processed. This usually happens after logging out or when refreshing the page.
+                    Twoja sesja wygasła lub strona została już przetworzona. Zwykle dzieje się to po wylogowaniu lub podczas odświeżania strony.
                 </p>
 
                 <!-- Buttons -->
                 <div class="space-y-3">
                     @auth
                         <a href="{{ route('dashboard') }}" class="block w-full px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition font-semibold">
-                            Go to Dashboard
+                            Przejdź do panelu
                         </a>
                     @else
                         <a href="{{ route('home') }}" class="block w-full px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition font-semibold">
-                            Go to Home
+                            Przejdź do strony głównej
                         </a>
                         <a href="{{ route('login') }}" class="block w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-semibold">
-                            Sign In
+                            Zaloguj się
                         </a>
                     @endauth
                 </div>
 
                 <!-- Help text -->
                 <p class="text-xs text-gray-500 mt-6">
-                    If you continue to experience issues, please try clearing your browser cache.
+                    Jeśli nadal występują problemy, spróbuj wyczyścić pamięć podręczną przeglądarki.
                 </p>
             </div>
 
@@ -58,7 +58,7 @@
                     <svg class="inline w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                     </svg>
-                    Back to Homepage
+                    Powrót do strony głównej
                 </a>
             </div>
         </div>

@@ -64,7 +64,7 @@ class FridgeController extends Controller
 
         return redirect()
             ->route('fridge.index')
-            ->with('success', 'Product added to fridge successfully!');
+            ->with('success', 'Produkt został dodany do lodówki!');
     }
 
     /**
@@ -89,7 +89,7 @@ class FridgeController extends Controller
 
         return redirect()
             ->route('fridge.index')
-            ->with('success', 'Product updated successfully!');
+            ->with('success', 'Produkt został zaktualizowany!');
     }
 
     /**
@@ -103,7 +103,7 @@ class FridgeController extends Controller
 
         return redirect()
             ->route('fridge.index')
-            ->with('success', 'Product deleted successfully!');
+            ->with('success', 'Produkt został usunięty!');
     }
 
     /**
@@ -201,7 +201,7 @@ class FridgeController extends Controller
 
         return redirect()
             ->route('fridge.index')
-            ->with('success', "Successfully added {$productsAdded} products to your fridge!");
+            ->with('success', "Dodano {$productsAdded} produktów do lodówki!");
     }
 
     /**
@@ -215,7 +215,7 @@ class FridgeController extends Controller
 
         return redirect()
             ->route('fridge.index')
-            ->with('success', "Successfully deleted all {$deletedCount} products from your fridge!");
+            ->with('success', "Usunięto wszystkie {$deletedCount} produkty z lodówki!");
     }
 
     /**
@@ -237,6 +237,6 @@ class FridgeController extends Controller
 
         return redirect()
             ->route('fridge.index')
-            ->with('success', "Successfully deleted {$deletedCount} selected product(s) from your fridge!");
+            ->with('success', "Usunięto {$deletedCount} zaznaczonych produktów z lodówki!");
     }
 }

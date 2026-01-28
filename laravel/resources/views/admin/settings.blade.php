@@ -3,7 +3,7 @@
 @section('title', 'Ustawienia administratora')
 
 @section('content')
-<div class="py-12" x-data="{ activeTab: 'vertex-ai', testing: false }">
+<div class="py-12" x-data="{ activeTab: 'vertex-ai' }">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Header -->
         <div class="mb-8">
@@ -179,13 +179,12 @@
                             <button
                                 type="button"
                                 @click="testConnection('vertex-ai')"
-                                :disabled="testing"
-                                class="px-6 py-3 border border-emerald-500 text-emerald-600 rounded-md hover:bg-emerald-50 transition font-semibold disabled:opacity-50"
+                                class="px-6 py-3 border border-emerald-500 text-emerald-600 rounded-md hover:bg-emerald-50 transition font-semibold"
                             >
                                 <svg class="inline w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
-                                <span x-text="testing ? 'Testowanie...' : 'Testuj połączenie'"></span>
+                                Testuj połączenie
                             </button>
                         @endif
                     </div>
@@ -280,13 +279,12 @@
                             <button
                                 type="button"
                                 @click="testConnection('spoonacular')"
-                                :disabled="testing"
-                                class="px-6 py-3 border border-emerald-500 text-emerald-600 rounded-md hover:bg-emerald-50 transition font-semibold disabled:opacity-50"
+                                class="px-6 py-3 border border-emerald-500 text-emerald-600 rounded-md hover:bg-emerald-50 transition font-semibold"
                             >
                                 <svg class="inline w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
-                                <span x-text="testing ? 'Testowanie...' : 'Testuj połączenie'"></span>
+                                Testuj połączenie
                             </button>
                         @endif
                     </div>
@@ -350,11 +348,14 @@
 
 <script>
     function testConnection(service) {
-        Alpine.store('testing', true);
-
         const routes = {
             'vertex-ai': '{{ route('admin.vertex-ai.test') }}',
             'spoonacular': '{{ route('admin.spoonacular.test') }}'
+        };
+
+        const serviceNames = {
+            'vertex-ai': 'Vertex AI',
+            'spoonacular': 'Spoonacular'
         };
 
         fetch(routes[service], {
@@ -367,16 +368,13 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('✅ Sukces!\n\n' + data.message);
+                showToast('✅ ' + data.message, 'success', 6000);
             } else {
-                alert('❌ Niepowodzenie\n\n' + data.message);
+                showToast('❌ Test ' + serviceNames[service] + ' nie powiódł się: ' + data.message, 'error', 8000);
             }
         })
         .catch(error => {
-            alert('❌ Błąd\n\nTest połączenia nie powiódł się: ' + error.message);
-        })
-        .finally(() => {
-            Alpine.store('testing', false);
+            showToast('❌ Błąd podczas testowania połączenia: ' + error.message, 'error', 8000);
         });
     }
 </script>

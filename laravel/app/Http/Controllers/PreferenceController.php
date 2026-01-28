@@ -42,6 +42,6 @@ class PreferenceController extends Controller
 
         return redirect()
             ->route('preferences.show')
-            ->with('success', 'Preferences updated successfully!');
+            ->with('success', 'Preferencje zostały zaktualizowane!');
     }
 }

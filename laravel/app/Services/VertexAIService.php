@@ -36,6 +36,45 @@ class VertexAIService
     }
 
     /**
+     * Test Vertex AI connection by making a simple API call.
+     *
+     * @return array ['success' => true] or ['error' => 'message']
+     */
+    public function testConnection(): array
+    {
+        try {
+            if (!$this->projectId) {
+                return ['error' => 'Project ID nie zostało skonfigurowane'];
+            }
+
+            // Try to get access token
+            $accessToken = $this->getAccessToken();
+
+            if (!$accessToken) {
+                return ['error' => 'Nie udało się uzyskać tokenu dostępu. Sprawdź dane uwierzytelniające konta usługi.'];
+            }
+
+            // Make a simple test request to Vertex AI API
+            $prompt = "Hello";
+            $response = $this->callGeminiText($prompt, 0.1);
+
+            if (isset($response['error'])) {
+                return ['error' => $response['error']];
+            }
+
+            if (empty($response['text'])) {
+                return ['error' => 'API zwróciło pustą odpowiedź'];
+            }
+
+            return ['success' => true, 'message' => 'Połączenie udane'];
+
+        } catch (\Exception $e) {
+            Log::error('Vertex AI Connection Test Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Analyze a fridge image using Vertex AI Gemini Vision.
      *
      * @param string $imagePath
@@ -69,7 +108,7 @@ class VertexAIService
     {
         if (!$this->projectId) {
             Log::error('Vertex AI not configured - PROJECT_ID is required');
-            return ['error' => 'Vertex AI is not properly configured. Please check your .env file and ensure GOOGLE_CLOUD_PROJECT_ID is set.'];
+            return ['error' => 'Vertex AI nie jest prawidłowo skonfigurowane. Sprawdź plik .env i upewnij się, że GOOGLE_CLOUD_PROJECT_ID jest ustawione.'];
         }
 
         try {
@@ -560,14 +599,14 @@ class VertexAIService
     {
         if (!$this->projectId) {
             Log::warning('Vertex AI not configured');
-            return ['error' => 'Not configured'];
+            return ['error' => 'Nie skonfigurowane'];
         }
 
         try {
             $accessToken = $this->getAccessToken();
 
             if (!$accessToken) {
-                throw new \Exception('Failed to obtain access token');
+                throw new \Exception('Nie udało się uzyskać tokenu dostępu');
             }
 
             $endpoint = "https://{$this->location}-aiplatform.googleapis.com/v1/projects/{$this->projectId}/locations/{$this->location}/publishers/google/models/{$this->model}:generateContent";
@@ -595,7 +634,7 @@ class VertexAIService
 
             if (!$response->successful()) {
                 Log::error('Vertex AI API Error: ' . $response->body());
-                return ['error' => 'API error'];
+                return ['error' => 'Błąd API'];
             }
 
             $result = $response->json();
