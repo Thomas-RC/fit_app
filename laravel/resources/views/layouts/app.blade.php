@@ -163,6 +163,20 @@
 
     @stack('scripts')
 
+    <!-- Project Disclaimer Banner -->
+    <div x-data="{ show: !localStorage.getItem('disclaimerClosed') }" x-show="show" x-cloak
+         class="fixed bottom-0 left-0 right-0 bg-amber-500 text-white py-3 px-4 shadow-lg z-50">
+        <div class="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-2">
+            <p class="text-sm font-medium">
+                Strona nie jest prawdziwa aplikacja, to projekt zaliczeniowy na potrzebe pracy projektowej "Zastosowanie metod sztucznej inteligencji"
+            </p>
+            <button @click="localStorage.setItem('disclaimerClosed', 'true'); show = false"
+                    class="bg-white text-amber-600 px-4 py-1 rounded text-sm font-medium hover:bg-amber-50 transition-colors">
+                Rozumiem
+            </button>
+        </div>
+    </div>
+
     <!-- Service Worker Registration -->
     @if(config('app.env') !== 'local')
     <script>

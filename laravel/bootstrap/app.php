@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\CheckAdmin::class,
         ]);
 
+        // Trust all proxies (Traefik)
+        $middleware->trustProxies(at: '*');
+
         // Disable cache in development
         $middleware->append(\App\Http\Middleware\DisableCacheInDevelopment::class);
     })

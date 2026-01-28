@@ -17,10 +17,11 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-public"
 
-      # HTTP Router (redirect to HTTPS)
+      # HTTP Router (redirect to HTTPS) - low priority to allow ACME challenges
       - "traefik.http.routers.fitai-http.rule=Host(`${DOMAIN}`) || Host(`www.${DOMAIN}`)"
       - "traefik.http.routers.fitai-http.entrypoints=web"
       - "traefik.http.routers.fitai-http.middlewares=fitai-redirect-https"
+      - "traefik.http.routers.fitai-http.priority=1"
 
       # HTTPS Router
       - "traefik.http.routers.fitai-https.rule=Host(`${DOMAIN}`) || Host(`www.${DOMAIN}`)"
