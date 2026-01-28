@@ -24,7 +24,7 @@
 
     /* Cards */
     .fit-card {
-        @apply rounded-2xl shadow-2xl;
+        @apply rounded-2xl shadow-2xl p-4 sm:p-6;
         background-color: #f4fff6;
         background-image: repeating-linear-gradient(
             45deg,
@@ -58,7 +58,7 @@
 
     /* Meal Card */
     .meal-card {
-        @apply border border-gray-200 rounded-xl p-5 mb-6 bg-white;
+        @apply border border-gray-200 rounded-xl p-4 sm:p-5 mb-6 bg-white;
     }
 
     .meal-header {

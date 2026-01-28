@@ -56,7 +56,31 @@ export default {
             maxWidth: {
                 'container-wide': '960px',
             },
+            spacing: {
+                'safe-top': 'env(safe-area-inset-top)',
+                'safe-bottom': 'env(safe-area-inset-bottom)',
+                'safe-left': 'env(safe-area-inset-left)',
+                'safe-right': 'env(safe-area-inset-right)',
+            },
         },
     },
-    plugins: [],
+    plugins: [
+        function({ addUtilities }) {
+            const newUtilities = {
+                '.pb-safe': {
+                    paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+                },
+                '.pt-safe': {
+                    paddingTop: 'max(1rem, env(safe-area-inset-top))',
+                },
+                '.pl-safe': {
+                    paddingLeft: 'env(safe-area-inset-left)',
+                },
+                '.pr-safe': {
+                    paddingRight: 'env(safe-area-inset-right)',
+                },
+            };
+            addUtilities(newUtilities);
+        },
+    ],
 };

@@ -196,24 +196,65 @@
                     <h2 class="text-2xl font-bold text-gray-900 mb-4">Prześlij zdjęcie</h2>
                     <p class="text-gray-600 mb-8">Zrób zdjęcie lodówki, a AI wykryje wszystkie produkty</p>
 
-                    <!-- Drop Zone -->
-                    <label class="block">
-                        <input
-                            type="file"
-                            @change="handleFileSelect"
-                            accept="image/jpeg,image/jpg,image/png,image/webp"
-                            class="hidden"
-                        >
-                        <div class="border-2 border-dashed border-fit-green-500 rounded-lg p-12 cursor-pointer hover:border-fit-green-600 hover:bg-fit-green-50 transition">
-                            <div class="text-gray-600">
-                                <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <!-- Mobile: Dwa przyciski (aparat + galeria) -->
+                    <div class="md:hidden space-y-3">
+                        <!-- Aparat -->
+                        <label class="block">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                capture="environment"
+                                @change="handleFileSelect"
+                                class="hidden"
+                                id="camera-input"
+                            >
+                            <div class="w-full btn-fit-primary text-center cursor-pointer flex items-center justify-center gap-2">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 </svg>
-                                <p class="text-lg font-medium mb-2">Kliknij, aby przesłać lub przeciągnij i upuść</p>
-                                <p class="text-sm">JPG, PNG lub WEBP (maks. 5MB)</p>
+                                Zrób zdjęcie
                             </div>
-                        </div>
-                    </label>
+                        </label>
+
+                        <!-- Galeria -->
+                        <label class="block">
+                            <input
+                                type="file"
+                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                @change="handleFileSelect"
+                                class="hidden"
+                                id="gallery-input"
+                            >
+                            <div class="w-full px-6 py-3 border-2 border-fit-green-500 text-fit-green-600 rounded-md hover:bg-fit-green-50 font-medium text-center cursor-pointer flex items-center justify-center gap-2">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                Wybierz z galerii
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Desktop: Drag & drop -->
+                    <div class="hidden md:block">
+                        <label class="block">
+                            <input
+                                type="file"
+                                @change="handleFileSelect"
+                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                class="hidden"
+                            >
+                            <div class="border-2 border-dashed border-fit-green-500 rounded-lg p-12 cursor-pointer hover:border-fit-green-600 hover:bg-fit-green-50 transition">
+                                <div class="text-gray-600">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    <p class="text-lg font-medium mb-2">Kliknij, aby przesłać lub przeciągnij i upuść</p>
+                                    <p class="text-sm">JPG, PNG lub WEBP (maks. 5MB)</p>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
 
                     <div class="mt-8 flex gap-4 justify-center">
                         <a href="{{ route('fridge.index') }}" class="px-6 py-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium">

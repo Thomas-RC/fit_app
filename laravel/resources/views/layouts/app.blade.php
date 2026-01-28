@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Disable caching in development -->
@@ -41,7 +41,7 @@
     <div class="min-h-screen">
         <!-- Navigation -->
         @auth
-            <nav class="bg-white/95 backdrop-blur-sm shadow-md">
+            <nav class="hidden md:block bg-white/95 backdrop-blur-sm shadow-md">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="flex justify-between h-16">
                         <div class="flex">
@@ -109,10 +109,13 @@
                     </div>
                 </div>
             </nav>
+
+            <!-- Bottom Navigation (Mobile only) -->
+            <x-navigation.bottom-nav />
         @endauth
 
         <!-- Page Content -->
-        <main>
+        <main class="pb-16 md:pb-0 pb-safe">
             <!-- Flash Messages -->
             @if(session('success'))
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
