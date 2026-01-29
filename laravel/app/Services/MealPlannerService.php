@@ -237,9 +237,23 @@ class MealPlannerService
 
                 // Try to find matching fridge item if from_fridge=true
                 if ($ingredient['from_fridge']) {
+                    $ingredientNameLower = strtolower($ingredient['name']);
+
+                    // Try case-insensitive matching with partial match in both directions
                     $fridgeItem = FridgeItem::where('user_id', $userId)
-                        ->where('product_name', 'LIKE', '%' . $ingredient['name'] . '%')
+                        ->whereRaw('LOWER(product_name) LIKE ?', ['%' . $ingredientNameLower . '%'])
                         ->first();
+
+                    // If not found, try reverse match (e.g., "Jajka" should match "jajko")
+                    if (!$fridgeItem) {
+                        $fridgeItem = FridgeItem::where('user_id', $userId)
+                            ->get()
+                            ->first(function($item) use ($ingredientNameLower) {
+                                $productLower = strtolower($item->product_name);
+                                return str_contains($productLower, $ingredientNameLower) ||
+                                       str_contains($ingredientNameLower, $productLower);
+                            });
+                    }
 
                     if ($fridgeItem) {
                         $fridgeItemId = $fridgeItem->id;

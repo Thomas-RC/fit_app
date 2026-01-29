@@ -352,6 +352,9 @@ class VertexAIService
                 'fridge_items_count' => count($fridgeItems)
             ]);
 
+            // LOG FULL PROMPT FOR DEBUGGING
+            Log::info("FULL PROMPT FOR {$mealType}:", ['prompt' => $prompt]);
+
             // Call Gemini API
             $response = $this->callGeminiText($prompt, 0.7);
 
@@ -374,10 +377,11 @@ class VertexAIService
                 return null;
             }
 
-            // Validate recipe
-            if (!$this->validateRecipe($recipe)) {
+            // Validate recipe (with diet compliance check)
+            if (!$this->validateRecipe($recipe, $dietType)) {
                 Log::error('Recipe validation failed', [
                     'meal_type' => $mealType,
+                    'diet_type' => $dietType,
                     'recipe' => $recipe
                 ]);
                 return null;
@@ -415,12 +419,46 @@ class VertexAIService
             ? "Brak składników w lodówce"
             : "- " . implode("\n- ", array_slice($fridgeItems, 0, 30)); // Max 30
 
-        $dietText = [
-            'wegetariańska' => 'wegetariańska (bez mięsa i ryb)',
-            'wegańska' => 'wegańska (bez produktów zwierzęcych)',
-            'keto' => 'ketogeniczna (nisko-węglowodanowa)',
-            'omnivore' => 'wszystkożerna (MOŻE i POWINNA zawierać mięso, ryby, drób - używaj różnorodnych źródeł białka)'
-        ][$dietType] ?? 'wszystkożerna (MOŻE zawierać mięso)';
+        // Diet-specific restrictions and guidelines
+        $dietText = '';
+        $dietRestrictions = '';
+
+        switch ($dietType) {
+            case 'wegetariańska':
+            case 'vegetarian':
+                $dietText = 'wegetariańska';
+                $dietRestrictions = <<<DIET
+❌ ABSOLUTNIE ZAKAZANE - NIE UŻYWAJ TYCH SKŁADNIKÓW:
+   wołowina, wieprzowina, kurczak, indyk, drób, kaczka, gęś, cielęcina, baranina
+   ryby, łosoś, tuńczyk, dorsz, owoce morza, krewetki
+   mięso, szynka, kiełbasa, kabanos, wędlina, pasztet
+✅ DOZWOLONE: jajka, nabiał (mleko, ser, jogurt, masło), warzywa, owoce, rośliny strączkowe, tofu, tempeh
+DIET;
+                break;
+            case 'wegańska':
+            case 'vegan':
+                $dietText = 'wegańska';
+                $dietRestrictions = <<<DIET
+❌ ABSOLUTNIE ZAKAZANE - NIE UŻYWAJ TYCH SKŁADNIKÓW:
+   wszelkie mięso (wołowina, kurczak, wieprzowina, drób)
+   ryby i owoce morza
+   jajka, mleko, ser, jogurt, masło, śmietana, kefir
+   miód, żelatyna
+✅ DOZWOLONE TYLKO: warzywa, owoce, rośliny strączkowe, orzechy, nasiona, tofu, tempeh, mleko roślinne
+DIET;
+                break;
+            case 'keto':
+                $dietText = 'ketogeniczna';
+                $dietRestrictions = "❌ UNIKAJ: chleb, ryż, makaron, ziemniaki, cukier, mąka\n✅ PREFERUJ: mięso, ryby, jajka, warzywa niskowęglowodanowe, tłuste nabiał, awokado";
+                break;
+            case 'omnivore':
+                $dietText = 'wszystkożerna';
+                $dietRestrictions = "✅ MOŻE zawierać: mięso, ryby, drób, jajka, nabiał, warzywa - używaj różnorodnych źródeł białka";
+                break;
+            default:
+                $dietText = 'wszystkożerna';
+                $dietRestrictions = "✅ Bez ograniczeń";
+        }
 
         $previousMealsText = '';
         if (!empty($previousMeals)) {
@@ -433,15 +471,23 @@ Jesteś doświadczonym dietetykiem i kucharzem. Wygeneruj przepis na {$mealType}
 SKŁADNIKI Z LODÓWKI UŻYTKOWNIKA:
 {$fridgeList}
 
-DIETA: {$dietText}
+🍽️ DIETA: {$dietText}
+{$dietRestrictions}
 {$previousMealsText}
 
-ZASADY:
+⚠️ ZASADY DIETETYCZNE (NAJWAŻNIEJSZE - MUSISZ PRZESTRZEGAĆ!):
+- Dla diety wegetariańskiej/wegańskiej - BEZWZGLĘDNIE NIE UŻYWAJ zakazanych składników!
+- Sprawdź DWUKROTNIE czy każdy składnik pasuje do wybranej diety
+- Jeśli dieta jest wegetariańska/wegańska - przepis NIE MOŻE zawierać mięsa/ryb/jaj (dla wegańskiej)
+
+📋 ZASADY PRZEPISU:
+- PROSTOTA: Maksymalnie 8-10 składników RAZEM (licząc przyprawy)
+- PROSTOTA: Nie łącz za dużo różnych elementów - jedno danie główne, max 1 dodatek
 - RÓŻNORODNOŚĆ: Generuj RÓŻNE rodzaje potraw (nie powtarzaj omletów, sałatek itp.)
 - Używaj RÓŻNYCH technik gotowania (smażenie, pieczenie, gotowanie, duszenie, surówki)
 - Jeśli są już wygenerowane posiłki - unikaj podobnych składników głównych i technik
 - Używaj GŁÓWNIE składników z lodówki użytkownika (priorytet!)
-- Możesz dodać MAKSYMALNIE 5 składników do dokupienia (bez przypraw)
+- Możesz dodać MAKSYMALNIE 5 składników do dokupienia (bez przypraw podstawowych)
 - Podstawowe przyprawy (sól, pieprz, cukier) nie liczą się do limitu 5
 - Podaj DOKŁADNE ilości dla każdego składnika (gramy, mililitry, sztuki, łyżki)
 - Instrukcje krok po kroku w jasny i zrozumiały sposób
@@ -475,6 +521,8 @@ FORMAT ODPOWIEDZI (JSON):
 WAŻNE:
 - Zwróć TYLKO JSON, bez żadnego dodatkowego tekstu
 - Tablica "ingredients" musi mieć DOKŁADNE ilości (amount) i jednostki (unit)
+- "amount" MUSI BYĆ LICZBĄ (np. 3, 50, 0.5) - NIE WOLNO używać "do smaku", "odrobina", itp!
+- Dla przypraw używaj małych liczb: sól=1g, pieprz=0.5g
 - Pole "from_fridge" = true jeśli składnik jest z lodówki użytkownika
 - Instrukcje jako jeden ciągły string z \\n między krokami
 - Maksymalnie 5 składników z from_fridge=false
@@ -523,9 +571,9 @@ PROMPT;
     }
 
     /**
-     * Validate recipe structure.
+     * Validate recipe structure and dietary compliance.
      */
-    protected function validateRecipe(array $recipe): bool
+    protected function validateRecipe(array $recipe, string $dietType = ''): bool
     {
         // Required fields
         $required = ['title', 'servings', 'estimated_calories', 'ingredients', 'instructions'];
@@ -540,6 +588,62 @@ PROMPT;
         // Validate ingredients
         if (!is_array($recipe['ingredients']) || empty($recipe['ingredients'])) {
             Log::warning("Invalid or empty ingredients array");
+            return false;
+        }
+
+        // DIET COMPLIANCE CHECK
+        if (in_array($dietType, ['wegetariańska', 'wegańska', 'vegetarian', 'vegan'])) {
+            $forbiddenMeat = [
+                'wołow', 'wieprz', 'kurczak', 'indyk', 'drób', 'kaczk', 'gęś',
+                'ryb', 'łosoś', 'tuńczyk', 'dorsz', 'krewetk',
+                'mięs', 'szynk', 'kiełbas', 'wędlin', 'pasztet', 'kabanos',
+                'burger', 'kotlet', 'schab', 'karkówk', 'cielęc', 'baranin',
+                'salami', 'boczek', 'bekon'
+            ];
+
+            if (in_array($dietType, ['wegańska', 'vegan'])) {
+                $forbiddenMeat = array_merge($forbiddenMeat, [
+                    'jaj', 'mleko', 'ser', 'jogurt', 'masło', 'śmietan',
+                    'kefir', 'twaróg', 'miód'
+                ]);
+            }
+
+            // Check recipe title
+            $titleLower = strtolower($recipe['title']);
+            foreach ($forbiddenMeat as $forbidden) {
+                if (str_contains($titleLower, $forbidden)) {
+                    Log::warning("Recipe violates diet restriction in title", [
+                        'diet' => $dietType,
+                        'title' => $recipe['title'],
+                        'forbidden_word' => $forbidden
+                    ]);
+                    return false;
+                }
+            }
+
+            // Check each ingredient
+            foreach ($recipe['ingredients'] as $ingredient) {
+                $ingredientLower = strtolower($ingredient['name'] ?? '');
+                foreach ($forbiddenMeat as $forbidden) {
+                    if (str_contains($ingredientLower, $forbidden)) {
+                        Log::warning("Recipe violates diet restriction in ingredients", [
+                            'diet' => $dietType,
+                            'ingredient' => $ingredient['name'],
+                            'forbidden_word' => $forbidden
+                        ]);
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // Validate ingredient count (max 10)
+        if (count($recipe['ingredients']) > 10) {
+            Log::warning("Too many ingredients - recipe too complex", [
+                'count' => count($recipe['ingredients']),
+                'limit' => 10,
+                'title' => $recipe['title']
+            ]);
             return false;
         }
 
@@ -573,6 +677,15 @@ PROMPT;
         foreach ($recipe['ingredients'] as $ingredient) {
             if (!isset($ingredient['name']) || !isset($ingredient['amount']) || !isset($ingredient['unit'])) {
                 Log::warning("Invalid ingredient structure", ['ingredient' => $ingredient]);
+                return false;
+            }
+
+            // Validate that amount is numeric
+            if (!is_numeric($ingredient['amount'])) {
+                Log::warning("Invalid amount - must be numeric", [
+                    'ingredient' => $ingredient['name'],
+                    'amount' => $ingredient['amount']
+                ]);
                 return false;
             }
         }
