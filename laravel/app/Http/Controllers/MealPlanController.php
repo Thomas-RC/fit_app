@@ -105,27 +105,14 @@ class MealPlanController extends Controller
         // Policy check
         $this->authorize('view', $mealPlan);
 
-        $mealPlan->load('recipes');
+        // Load recipes with AI-generated data
+        $mealPlan->load('recipes.aiGeneratedRecipe.ingredients');
 
         // Calculate nutrition breakdown
+        // Note: AI recipes don't have detailed macros yet - will be added later
         $totalProtein = 0;
         $totalCarbs = 0;
         $totalFat = 0;
-
-        foreach ($mealPlan->recipes as $recipe) {
-            $recipeData = $recipe->recipe_data;
-            if (isset($recipeData['nutrition']['nutrients'])) {
-                foreach ($recipeData['nutrition']['nutrients'] as $nutrient) {
-                    if ($nutrient['name'] === 'Protein') {
-                        $totalProtein += $nutrient['amount'];
-                    } elseif ($nutrient['name'] === 'Carbohydrates') {
-                        $totalCarbs += $nutrient['amount'];
-                    } elseif ($nutrient['name'] === 'Fat') {
-                        $totalFat += $nutrient['amount'];
-                    }
-                }
-            }
-        }
 
         // Get user's fridge items for comparison (in Polish, lowercase)
         $userFridgeItems = $mealPlan->user->fridgeItems()
@@ -133,21 +120,31 @@ class MealPlanController extends Controller
             ->map(fn($name) => strtolower(trim($name)))
             ->toArray();
 
-        // Collect all unique ingredients from all recipes (using Polish translations from database)
+        // Collect all unique ingredients from AI-generated recipes
         $allIngredientsPolish = [];
         foreach ($mealPlan->recipes as $recipe) {
-            $recipeData = $recipe->recipe_data;
-
-            // Get ingredients from extendedIngredients (already translated in database)
-            if (isset($recipeData['extendedIngredients']) && is_array($recipeData['extendedIngredients'])) {
-                foreach ($recipeData['extendedIngredients'] as $ingredient) {
-                    // Use translated Polish name from database, fallback to English if not available
-                    $polishName = $ingredient['name_pl'] ?? $ingredient['name'] ?? $ingredient['original'] ?? null;
-
+            // Check if this is an AI-generated recipe
+            if ($recipe->isAiGenerated() && $recipe->aiGeneratedRecipe) {
+                foreach ($recipe->aiGeneratedRecipe->ingredients as $ingredient) {
+                    $polishName = $ingredient->ingredient_name;
                     if ($polishName) {
                         $polishNameLower = strtolower(trim($polishName));
                         if (!in_array($polishNameLower, $allIngredientsPolish)) {
                             $allIngredientsPolish[] = $polishNameLower;
+                        }
+                    }
+                }
+            } else {
+                // Fallback for old Spoonacular recipes (if any exist)
+                $recipeData = $recipe->recipe_data;
+                if (isset($recipeData['extendedIngredients']) && is_array($recipeData['extendedIngredients'])) {
+                    foreach ($recipeData['extendedIngredients'] as $ingredient) {
+                        $polishName = $ingredient['name_pl'] ?? $ingredient['name'] ?? $ingredient['original'] ?? null;
+                        if ($polishName) {
+                            $polishNameLower = strtolower(trim($polishName));
+                            if (!in_array($polishNameLower, $allIngredientsPolish)) {
+                                $allIngredientsPolish[] = $polishNameLower;
+                            }
                         }
                     }
                 }

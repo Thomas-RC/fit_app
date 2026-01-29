@@ -101,10 +101,6 @@
             <!-- Meals -->
             <div class="space-y-5">
                 @foreach($mealPlan->recipes as $recipe)
-                    @php
-                        $recipeData = $recipe->recipe_data;
-                    @endphp
-
                     <div class="meal-card">
                         <!-- Meal Header -->
                         <div class="meal-header">
@@ -132,33 +128,70 @@
                             <!-- Ingredients Section -->
                             <div class="ingredients">
                                 <h4 class="font-semibold text-gray-700 mb-2">Składniki:</h4>
-                                @if(isset($recipeData['extendedIngredients']) && count($recipeData['extendedIngredients']) > 0)
+
+                                @if($recipe->isAiGenerated() && $recipe->aiGeneratedRecipe)
+                                    {{-- AI-generated recipe ingredients --}}
                                     <ul class="text-sm text-gray-600">
-                                        @foreach($recipeData['extendedIngredients'] as $ingredient)
-                                            <li>{{ $ingredient['original_pl'] ?? $ingredient['name_pl'] ?? $ingredient['original'] ?? $ingredient['name'] }}</li>
+                                        @foreach($recipe->aiGeneratedRecipe->ingredients as $ingredient)
+                                            <li>
+                                                {{ $ingredient->ingredient_name }} - {{ $ingredient->amount }} {{ $ingredient->unit }}
+                                                @if($ingredient->isFromFridge())
+                                                    <span class="text-green-600 text-xs">✓ z lodówki</span>
+                                                @else
+                                                    <span class="text-orange-600 text-xs">🛒 do dokupienia</span>
+                                                @endif
+                                            </li>
                                         @endforeach
                                     </ul>
                                 @else
-                                    <p class="text-sm text-gray-500">Składniki niedostępne</p>
+                                    {{-- Fallback for old Spoonacular recipes --}}
+                                    @php $recipeData = $recipe->recipe_data; @endphp
+                                    @if(isset($recipeData['extendedIngredients']) && count($recipeData['extendedIngredients']) > 0)
+                                        <ul class="text-sm text-gray-600">
+                                            @foreach($recipeData['extendedIngredients'] as $ingredient)
+                                                <li>{{ $ingredient['original_pl'] ?? $ingredient['name_pl'] ?? $ingredient['original'] ?? $ingredient['name'] }}</li>
+                                            @endforeach
+                                        </ul>
+                                    @else
+                                        <p class="text-sm text-gray-500">Składniki niedostępne</p>
+                                    @endif
                                 @endif
 
                                 <!-- Quick Stats -->
                                 <div class="mt-4 text-xs text-gray-600">
-                                    @if(isset($recipeData['readyInMinutes']))
-                                        <div class="flex items-center gap-1 mb-1">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                            </svg>
-                                            {{ $recipeData['readyInMinutes'] }} min
-                                        </div>
-                                    @endif
-                                    @if(isset($recipeData['servings']))
+                                    @if($recipe->isAiGenerated() && $recipe->aiGeneratedRecipe)
+                                        @if($recipe->aiGeneratedRecipe->ready_in_minutes)
+                                            <div class="flex items-center gap-1 mb-1">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                                {{ $recipe->aiGeneratedRecipe->ready_in_minutes }} min
+                                            </div>
+                                        @endif
                                         <div class="flex items-center gap-1">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                                             </svg>
-                                            {{ $recipeData['servings'] }} porcji
+                                            {{ $recipe->aiGeneratedRecipe->servings }} porcji
                                         </div>
+                                    @else
+                                        @php $recipeData = $recipe->recipe_data; @endphp
+                                        @if(isset($recipeData['readyInMinutes']))
+                                            <div class="flex items-center gap-1 mb-1">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                                {{ $recipeData['readyInMinutes'] }} min
+                                            </div>
+                                        @endif
+                                        @if(isset($recipeData['servings']))
+                                            <div class="flex items-center gap-1">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                                </svg>
+                                                {{ $recipeData['servings'] }} porcji
+                                            </div>
+                                        @endif
                                     @endif
                                 </div>
                             </div>
@@ -166,27 +199,35 @@
                             <!-- Instructions Section -->
                             <div class="steps">
                                 <h4 class="font-semibold text-gray-700 mb-2">Sposób przygotowania:</h4>
-                                @if(isset($recipeData['instructions_pl']) && !empty($recipeData['instructions_pl']))
-                                    @php
-                                        $instructionsText = is_array($recipeData['instructions_pl'])
-                                            ? implode("\n\n", $recipeData['instructions_pl'])
-                                            : $recipeData['instructions_pl'];
-                                    @endphp
-                                    <p class="text-sm text-gray-600 whitespace-pre-line">{{ $instructionsText }}</p>
-                                @elseif(isset($recipeData['instructions']) && !empty($recipeData['instructions']))
-                                    @php
-                                        $instructionsText = is_array($recipeData['instructions'])
-                                            ? implode("\n\n", $recipeData['instructions'])
-                                            : $recipeData['instructions'];
-                                    @endphp
-                                    <p class="text-sm text-gray-600 whitespace-pre-line">{{ $instructionsText }}</p>
+
+                                @if($recipe->isAiGenerated() && $recipe->aiGeneratedRecipe)
+                                    {{-- AI-generated recipe instructions --}}
+                                    <p class="text-sm text-gray-600 whitespace-pre-line">{{ $recipe->aiGeneratedRecipe->instructions }}</p>
                                 @else
-                                    <p class="text-sm text-gray-500 mb-3">Instrukcje niedostępne w API</p>
+                                    {{-- Fallback for old Spoonacular recipes --}}
+                                    @php $recipeData = $recipe->recipe_data; @endphp
+                                    @if(isset($recipeData['instructions_pl']) && !empty($recipeData['instructions_pl']))
+                                        @php
+                                            $instructionsText = is_array($recipeData['instructions_pl'])
+                                                ? implode("\n\n", $recipeData['instructions_pl'])
+                                                : $recipeData['instructions_pl'];
+                                        @endphp
+                                        <p class="text-sm text-gray-600 whitespace-pre-line">{{ $instructionsText }}</p>
+                                    @elseif(isset($recipeData['instructions']) && !empty($recipeData['instructions']))
+                                        @php
+                                            $instructionsText = is_array($recipeData['instructions'])
+                                                ? implode("\n\n", $recipeData['instructions'])
+                                                : $recipeData['instructions'];
+                                        @endphp
+                                        <p class="text-sm text-gray-600 whitespace-pre-line">{{ $instructionsText }}</p>
+                                    @else
+                                        <p class="text-sm text-gray-500 mb-3">Instrukcje niedostępne w API</p>
+                                    @endif
                                 @endif
 
                                 <!-- View Full Recipe Link -->
-                                @if(isset($recipeData['sourceUrl']))
-                                    <a href="{{ $recipeData['sourceUrl'] }}" target="_blank" class="inline-flex items-center text-sm font-medium mt-2 text-fit-green-600 hover:text-fit-green-700 no-underline">
+                                @if(!$recipe->isAiGenerated() && isset($recipe->recipe_data['sourceUrl']))
+                                    <a href="{{ $recipe->recipe_data['sourceUrl'] }}" target="_blank" class="inline-flex items-center text-sm font-medium mt-2 text-fit-green-600 hover:text-fit-green-700 no-underline">
                                         Zobacz pełny przepis
                                         <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>

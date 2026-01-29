@@ -14,6 +14,7 @@ class MealPlanRecipe extends Model
     protected $fillable = [
         'meal_plan_id',
         'spoonacular_recipe_id',
+        'ai_generated_recipe_id',  // Added for AI recipes
         'meal_type',
         'recipe_title',
         'calories',
@@ -38,5 +39,21 @@ class MealPlanRecipe extends Model
     public function mealPlan()
     {
         return $this->belongsTo(MealPlan::class);
+    }
+
+    /**
+     * Get the AI-generated recipe (if this is an AI recipe).
+     */
+    public function aiGeneratedRecipe()
+    {
+        return $this->belongsTo(AiGeneratedRecipe::class);
+    }
+
+    /**
+     * Check if this is an AI-generated recipe.
+     */
+    public function isAiGenerated(): bool
+    {
+        return !is_null($this->ai_generated_recipe_id);
     }
 }
