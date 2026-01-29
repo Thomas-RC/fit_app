@@ -182,19 +182,19 @@ class AdminController extends Controller
     public function testSpoonacular(): JsonResponse
     {
         try {
-            // Try a simple API call
-            $result = $this->spoonacularService->getRandomRecipes([], 1);
+            // Test with simple ingredient search (minimal quota usage)
+            $result = $this->spoonacularService->searchIngredient('milk');
 
-            if (isset($result['error'])) {
+            if (!$result) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Test API nie powiódł się: ' . $result['error'],
+                    'message' => 'Test API nie powiódł się: Brak wyników',
                 ]);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'API Spoonacular działa poprawnie!',
+                'message' => 'API Spoonacular działa poprawnie! Znaleziono: ' . ($result['name'] ?? 'ingredient'),
             ]);
 
         } catch (\Exception $e) {

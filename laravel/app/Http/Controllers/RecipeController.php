@@ -90,23 +90,4 @@ class RecipeController extends Controller
 
         return view('recipes.show', compact('recipe', 'userIngredients'));
     }
-
-    /**
-     * Get random recipes (for inspiration).
-     */
-    public function random(): View
-    {
-        $preferences = [];
-
-        if (auth()->check() && auth()->user()->preferences) {
-            $preferences = [
-                'diet_type' => auth()->user()->preferences->diet_type,
-            ];
-        }
-
-        $result = $this->spoonacularService->getRandomRecipes($preferences, 12);
-        $recipes = $result['recipes'] ?? [];
-
-        return view('recipes.index', compact('recipes'));
-    }
 }
