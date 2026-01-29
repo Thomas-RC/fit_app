@@ -342,66 +342,111 @@ class VertexAIService
         array $previousMeals = []
     ): ?array
     {
-        try {
-            $prompt = $this->buildRecipePrompt($mealType, $targetCalories, $dietType, $fridgeItems, $previousMeals);
+        $maxRetries = 3;
+        $lastRecipe = null; // Keep last valid parsed recipe
 
-            Log::info('Generating complete recipe with AI', [
-                'meal_type' => $mealType,
-                'target_calories' => $targetCalories,
-                'diet_type' => $dietType,
-                'fridge_items_count' => count($fridgeItems)
-            ]);
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                if ($attempt > 1) {
+                    Log::info("Retry attempt {$attempt}/{$maxRetries} for {$mealType}");
+                }
 
-            // LOG FULL PROMPT FOR DEBUGGING
-            Log::info("FULL PROMPT FOR {$mealType}:", ['prompt' => $prompt]);
+                $prompt = $this->buildRecipePrompt($mealType, $targetCalories, $dietType, $fridgeItems, $previousMeals);
 
-            // Call Gemini API
-            $response = $this->callGeminiText($prompt, 0.7);
-
-            if (isset($response['error'])) {
-                Log::error('Failed to generate recipe', [
-                    'error' => $response['error'],
-                    'meal_type' => $mealType
-                ]);
-                return null;
-            }
-
-            // Parse JSON response
-            $recipe = $this->parseRecipeResponse($response['text']);
-
-            if (!$recipe) {
-                Log::error('Failed to parse recipe response', [
+                Log::info('Generating complete recipe with AI', [
                     'meal_type' => $mealType,
-                    'response_preview' => substr($response['text'], 0, 200)
-                ]);
-                return null;
-            }
-
-            // Validate recipe (with diet compliance check)
-            if (!$this->validateRecipe($recipe, $dietType)) {
-                Log::error('Recipe validation failed', [
-                    'meal_type' => $mealType,
+                    'target_calories' => $targetCalories,
                     'diet_type' => $dietType,
-                    'recipe' => $recipe
+                    'fridge_items_count' => count($fridgeItems),
+                    'attempt' => $attempt
                 ]);
-                return null;
+
+                // LOG FULL PROMPT FOR DEBUGGING (only first attempt)
+                if ($attempt === 1) {
+                    Log::info("FULL PROMPT FOR {$mealType}:", ['prompt' => $prompt]);
+                }
+
+                // Call Gemini API
+                $response = $this->callGeminiText($prompt, 0.7);
+
+                if (isset($response['error'])) {
+                    Log::error('Failed to generate recipe', [
+                        'error' => $response['error'],
+                        'meal_type' => $mealType,
+                        'attempt' => $attempt
+                    ]);
+                    continue; // Try again
+                }
+
+                // Parse JSON response
+                $recipe = $this->parseRecipeResponse($response['text']);
+
+                if (!$recipe) {
+                    Log::error('Failed to parse recipe response', [
+                        'meal_type' => $mealType,
+                        'response_preview' => substr($response['text'], 0, 200),
+                        'attempt' => $attempt
+                    ]);
+                    continue; // Try again
+                }
+
+                // Save as last recipe (fallback)
+                $lastRecipe = $recipe;
+
+                // Validate recipe (with diet compliance check)
+                if (!$this->validateRecipe($recipe, $dietType)) {
+                    Log::warning('Recipe validation failed', [
+                        'meal_type' => $mealType,
+                        'diet_type' => $dietType,
+                        'attempt' => $attempt,
+                        'title' => $recipe['title'],
+                        'ingredients_count' => count($recipe['ingredients'])
+                    ]);
+
+                    // If last attempt - check if we can use it anyway
+                    if ($attempt === $maxRetries && $lastRecipe) {
+                        // Check ONLY diet compliance (ignore ingredient count)
+                        if (!$this->checkDietCompliance($lastRecipe, $dietType)) {
+                            Log::error("Recipe violates diet even on last attempt - rejecting");
+                            return null; // NEVER save recipes that violate diet
+                        }
+
+                        // Diet is OK, only ingredient count is too high - use it anyway
+                        Log::warning("Using recipe despite too many ingredients (diet is OK)", [
+                            'title' => $lastRecipe['title'],
+                            'ingredients' => count($lastRecipe['ingredients'])
+                        ]);
+                        return $lastRecipe;
+                    }
+
+                    continue; // Try again
+                }
+
+                Log::info('Recipe generated successfully', [
+                    'title' => $recipe['title'],
+                    'calories' => $recipe['estimated_calories'],
+                    'ingredients_count' => count($recipe['ingredients']),
+                    'attempt' => $attempt
+                ]);
+
+                return $recipe;
+
+            } catch (\Exception $e) {
+                Log::error('Exception in generateCompleteRecipe: ' . $e->getMessage(), [
+                    'meal_type' => $mealType,
+                    'attempt' => $attempt,
+                    'trace' => $e->getTraceAsString()
+                ]);
+
+                if ($attempt === $maxRetries) {
+                    return null; // All retries exhausted
+                }
+                // Otherwise continue to next retry
             }
-
-            Log::info('Recipe generated successfully', [
-                'title' => $recipe['title'],
-                'calories' => $recipe['estimated_calories'],
-                'ingredients_count' => count($recipe['ingredients'])
-            ]);
-
-            return $recipe;
-
-        } catch (\Exception $e) {
-            Log::error('Exception in generateCompleteRecipe: ' . $e->getMessage(), [
-                'meal_type' => $mealType,
-                'trace' => $e->getTraceAsString()
-            ]);
-            return null;
         }
+
+        Log::error("All {$maxRetries} retry attempts failed for {$mealType}");
+        return null;
     }
 
     /**
@@ -481,19 +526,25 @@ SKŁADNIKI Z LODÓWKI UŻYTKOWNIKA:
 - Jeśli dieta jest wegetariańska/wegańska - przepis NIE MOŻE zawierać mięsa/ryb/jaj (dla wegańskiej)
 
 📋 ZASADY PRZEPISU:
-- PROSTOTA: Maksymalnie 8-10 składników RAZEM (licząc przyprawy)
-- PROSTOTA: Nie łącz za dużo różnych elementów - jedno danie główne, max 1 dodatek
-- RÓŻNORODNOŚĆ: Generuj RÓŻNE rodzaje potraw (nie powtarzaj omletów, sałatek itp.)
-- Używaj RÓŻNYCH technik gotowania (smażenie, pieczenie, gotowanie, duszenie, surówki)
-- Jeśli są już wygenerowane posiłki - unikaj podobnych składników głównych i technik
-- Używaj GŁÓWNIE składników z lodówki użytkownika (priorytet!)
-- Możesz dodać MAKSYMALNIE 5 składników do dokupienia (bez przypraw podstawowych)
-- Podstawowe przyprawy (sól, pieprz, cukier) nie liczą się do limitu 5
-- Podaj DOKŁADNE ilości dla każdego składnika (gramy, mililitry, sztuki, łyżki)
-- Instrukcje krok po kroku w jasny i zrozumiały sposób
+- ⭐ JEDNO PROSTE DANIE: Generuj tylko JEDNO danie, NIE kompletny zestaw
+- ⭐ NIE ŁĄCZ: Jeśli robisz naleśnik z owocami - to jest CAŁY posiłek, NIE dodawaj sałatki owocowej, kotleta, itp.
+- ⭐ PROSTOTA: Maksymalnie 8 składników (lepiej 5-7)
+- ⭐ LOGICZNE POŁĄCZENIA:
+  * Słodkie śniadanie (naleśnik, owsianka) - TYLKO słodkie dodatki
+  * Wytrawne śniadanie (jajecznica, omlet) - TYLKO wytrawne dodatki
+  * NIE mieszaj słodkich owoców z jajkami/serem w jednym daniu
+- RÓŻNORODNOŚĆ: Generuj RÓŻNE rodzaje potraw (nie powtarzaj omletów, sałatek)
+- Używaj RÓŻNYCH technik gotowania (smażenie, pieczenie, gotowanie, duszenie)
+- Jeśli są już wygenerowane posiłki - unikaj podobnych składników
+- Używaj GŁÓWNIE składników z lodówki (priorytet!)
+- Maksymalnie 5 składników do dokupienia (bez przypraw)
+- Podstawowe przyprawy (sól, pieprz, cukier) nie liczą się do limitu
+- "amount" MUSI być liczbą - NIE "do smaku"!
+- Podaj DOKŁADNE ilości (gramy, ml, sztuki, łyżki)
+- Instrukcje krok po kroku, jasne i zrozumiałe
 - Szacuj kalorie realistycznie
 - Wszystko po polsku
-- Czas przygotowania realistyczny (10-60 minut)
+- Czas: 10-60 minut
 
 FORMAT ODPOWIEDZI (JSON):
 {
@@ -691,6 +742,52 @@ PROMPT;
         }
 
         return true;
+    }
+
+    /**
+     * Check ONLY diet compliance (separate from other validations).
+     * Used for fallback when all retries fail.
+     */
+    protected function checkDietCompliance(array $recipe, string $dietType): bool
+    {
+        if (!in_array($dietType, ['wegetariańska', 'wegańska', 'vegetarian', 'vegan'])) {
+            return true; // Not a restricted diet
+        }
+
+        $forbiddenMeat = [
+            'wołow', 'wieprz', 'kurczak', 'indyk', 'drób', 'kaczk', 'gęś',
+            'ryb', 'łosoś', 'tuńczyk', 'dorsz', 'krewetk',
+            'mięs', 'szynk', 'kiełbas', 'wędlin', 'pasztet', 'kabanos',
+            'burger', 'kotlet', 'schab', 'karkówk', 'cielęc', 'baranin',
+            'salami', 'boczek', 'bekon'
+        ];
+
+        if (in_array($dietType, ['wegańska', 'vegan'])) {
+            $forbiddenMeat = array_merge($forbiddenMeat, [
+                'jaj', 'mleko', 'ser', 'jogurt', 'masło', 'śmietan',
+                'kefir', 'twaróg', 'miód'
+            ]);
+        }
+
+        // Check title
+        $titleLower = strtolower($recipe['title']);
+        foreach ($forbiddenMeat as $forbidden) {
+            if (str_contains($titleLower, $forbidden)) {
+                return false; // Diet violation
+            }
+        }
+
+        // Check ingredients
+        foreach ($recipe['ingredients'] as $ingredient) {
+            $ingredientLower = strtolower($ingredient['name'] ?? '');
+            foreach ($forbiddenMeat as $forbidden) {
+                if (str_contains($ingredientLower, $forbidden)) {
+                    return false; // Diet violation
+                }
+            }
+        }
+
+        return true; // Diet OK
     }
 
     /**
