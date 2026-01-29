@@ -20,6 +20,10 @@
         'is_expired' => $item->isExpired(),
         'is_expiring_soon' => $item->isExpiringSoon(),
         'is_fresh' => $item->isFresh(),
+        'calories_per_100g' => $item->calories_per_100g,
+        'protein_per_100g' => $item->protein_per_100g,
+        'carbs_per_100g' => $item->carbs_per_100g,
+        'fat_per_100g' => $item->fat_per_100g,
     ])) }},
     get filteredItems() {
         return this.items.filter(item => {
@@ -123,10 +127,14 @@
         @endif
 
         <!-- Stats Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
             <div class="fit-card p-6 text-center">
                 <div class="text-sm text-gray-600 uppercase tracking-wide">Produkty</div>
                 <div class="text-3xl font-bold text-fit-green-600 mt-1">{{ $totalItems }}</div>
+            </div>
+            <div class="fit-card p-6 text-center">
+                <div class="text-sm text-gray-600 uppercase tracking-wide">Z nutrition</div>
+                <div class="text-3xl font-bold text-blue-600 mt-1">{{ $withNutrition }}</div>
             </div>
             <div class="fit-card p-6 text-center">
                 <div class="text-sm text-gray-600 uppercase tracking-wide">Świeże</div>
@@ -254,6 +262,17 @@
                             <span x-text="item.unit || ''"></span>
                         </p>
 
+                        <!-- Nutrition (if available) -->
+                        <div x-show="item.calories_per_100g" class="mb-3 p-3 bg-gray-50 rounded-md">
+                            <div class="text-xs font-semibold text-gray-700 mb-1">Na 100g:</div>
+                            <div class="grid grid-cols-2 gap-1 text-xs text-gray-600">
+                                <div><span class="font-medium">Kalorie:</span> <span x-text="item.calories_per_100g"></span> kcal</div>
+                                <div><span class="font-medium">Białko:</span> <span x-text="item.protein_per_100g"></span> g</div>
+                                <div><span class="font-medium">Węglowodany:</span> <span x-text="item.carbs_per_100g"></span> g</div>
+                                <div><span class="font-medium">Tłuszcze:</span> <span x-text="item.fat_per_100g"></span> g</div>
+                            </div>
+                        </div>
+
                         <!-- Dates -->
                         <div class="text-sm text-gray-500 mb-4 space-y-1">
                             <div>Dodano: <span x-text="item.added_at"></span></div>
@@ -302,6 +321,7 @@
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produkt</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ilość</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Wartości odżywcze (100g)</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dodano</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Wygasa</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -326,6 +346,17 @@
                                     <div class="text-sm text-gray-900">
                                         <span x-text="item.quantity || 'N/A'"></span>
                                         <span x-text="item.unit || ''"></span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div x-show="item.calories_per_100g" class="text-xs text-gray-700 space-y-0.5">
+                                        <div><span class="font-medium">Kcal:</span> <span x-text="item.calories_per_100g"></span></div>
+                                        <div><span class="font-medium">B:</span> <span x-text="item.protein_per_100g"></span>g</div>
+                                        <div><span class="font-medium">W:</span> <span x-text="item.carbs_per_100g"></span>g</div>
+                                        <div><span class="font-medium">T:</span> <span x-text="item.fat_per_100g"></span>g</div>
+                                    </div>
+                                    <div x-show="!item.calories_per_100g" class="text-xs text-gray-400 italic">
+                                        Brak danych
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">

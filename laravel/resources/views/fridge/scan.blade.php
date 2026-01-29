@@ -6,7 +6,7 @@
 <div class="py-12">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div x-data="{
-            state: 'upload', // upload, preview, analyzing, results
+            state: 'upload', // upload, preview, analyzing, results, saving
             file: null,
             preview: null,
             analyzing: false,
@@ -150,7 +150,14 @@
             async saveToFridge() {
                 if (this.results.length === 0) return;
 
+                this.state = 'saving';
+                this.progress = 0;
+                this.error = null;
+
                 try {
+                    this.progressMessage = 'Zapisywanie produktów...';
+                    this.animateProgress(20, 500);
+
                     const response = await fetch('{{ route('fridge.store-batch') }}', {
                         method: 'POST',
                         headers: {
@@ -162,14 +169,31 @@
                         })
                     });
 
+                    this.progressMessage = `Tłumaczenie nazw produktów (${this.results.length})...`;
+                    this.animateProgress(50, 1500);
+
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    this.progressMessage = 'Pobieranie danych odżywczych...';
+                    this.animateProgress(90, 2000);
+
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+
                     if (response.ok) {
-                        window.location.href = '{{ route('fridge.index') }}';
+                        this.progress = 100;
+                        this.progressMessage = 'Gotowe!';
+
+                        setTimeout(() => {
+                            window.location.href = '{{ route('fridge.index') }}';
+                        }, 500);
                     } else {
                         const data = await response.json();
                         this.error = data.message || 'Nie udało się zapisać produktów';
+                        this.state = 'results';
                     }
                 } catch (error) {
                     this.error = 'Nie udało się zapisać produktów: ' + error.message;
+                    this.state = 'results';
                 }
             }
         }">
@@ -420,6 +444,35 @@
                     >
                         Zapisz do lodówki
                     </button>
+                </div>
+            </div>
+
+            <!-- State 5: Saving -->
+            <div x-show="state === 'saving'" x-cloak class="fit-card p-12">
+                <div class="text-center">
+                    <div class="mb-8">
+                        <!-- Spinner -->
+                        <svg class="animate-spin h-16 w-16 mx-auto text-fit-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Przetwarzanie produktów...</h2>
+                    <p class="text-gray-600 mb-8" x-text="progressMessage"></p>
+
+                    <!-- Progress Bar -->
+                    <div class="max-w-md mx-auto mb-4">
+                        <div class="bg-gray-200 rounded-full h-4 overflow-hidden">
+                            <div
+                                class="bg-fit-green-600 h-full rounded-full transition-all duration-300"
+                                :style="`width: ${progress}%`"
+                            ></div>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2" x-text="`${Math.round(progress)}%`"></p>
+                    </div>
+
+                    <p class="text-sm text-gray-500">Pobieramy dane odżywcze dla każdego produktu...</p>
                 </div>
             </div>
         </div>

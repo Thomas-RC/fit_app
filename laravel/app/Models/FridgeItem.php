@@ -19,6 +19,13 @@ class FridgeItem extends Model
         'unit',
         'added_at',
         'expires_at',
+        // Nutrition data from Spoonacular
+        'spoonacular_ingredient_id',
+        'calories_per_100g',
+        'protein_per_100g',
+        'carbs_per_100g',
+        'fat_per_100g',
+        'nutrition_data',
     ];
 
     /**
@@ -32,6 +39,12 @@ class FridgeItem extends Model
             'added_at' => 'datetime',
             'expires_at' => 'date',
             'quantity' => 'decimal:2',
+            // Nutrition data casts
+            'calories_per_100g' => 'decimal:2',
+            'protein_per_100g' => 'decimal:2',
+            'carbs_per_100g' => 'decimal:2',
+            'fat_per_100g' => 'decimal:2',
+            'nutrition_data' => 'array',
         ];
     }
 

@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateFridgeItemRequest;
 use App\Http\Requests\UploadFridgePhotoRequest;
 use App\Models\FridgeItem;
 use App\Services\VertexAIService;
+use App\Services\SpoonacularService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,10 +17,12 @@ use Illuminate\Support\Facades\Storage;
 class FridgeController extends Controller
 {
     protected $vertexAIService;
+    protected $spoonacularService;
 
-    public function __construct(VertexAIService $vertexAIService)
+    public function __construct(VertexAIService $vertexAIService, SpoonacularService $spoonacularService)
     {
         $this->vertexAIService = $vertexAIService;
+        $this->spoonacularService = $spoonacularService;
     }
 
     /**
@@ -38,8 +41,9 @@ class FridgeController extends Controller
         $expiringSoon = $items->filter->isExpiringSoon()->count();
         $fresh = $items->filter->isFresh()->count();
         $expired = $items->filter->isExpired()->count();
+        $withNutrition = $items->filter(fn($item) => !is_null($item->calories_per_100g))->count();
 
-        return view('fridge.index', compact('items', 'totalItems', 'expiringSoon', 'fresh', 'expired'));
+        return view('fridge.index', compact('items', 'totalItems', 'expiringSoon', 'fresh', 'expired', 'withNutrition'));
     }
 
     /**
@@ -57,10 +61,13 @@ class FridgeController extends Controller
     {
         $user = auth()->user();
 
-        $user->fridgeItems()->create([
+        $item = $user->fridgeItems()->create([
             ...$request->validated(),
             'added_at' => now(),
         ]);
+
+        // Automatically enrich with nutrition data from Spoonacular
+        $this->spoonacularService->enrichFridgeItemWithNutrition($item);
 
         return redirect()
             ->route('fridge.index')
@@ -188,13 +195,16 @@ class FridgeController extends Controller
                 $expiresAt = now()->addDays($productData['expires_days']);
             }
 
-            $user->fridgeItems()->create([
+            $item = $user->fridgeItems()->create([
                 'product_name' => $productData['product_name'],
                 'quantity' => $productData['quantity'] ?? null,
                 'unit' => $productData['unit'] ?? null,
                 'added_at' => now(),
                 'expires_at' => $expiresAt,
             ]);
+
+            // Automatically enrich with nutrition data
+            $this->spoonacularService->enrichFridgeItemWithNutrition($item);
 
             $productsAdded++;
         }

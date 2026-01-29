@@ -579,4 +579,49 @@ PROMPT;
 
         return true;
     }
+
+    /**
+     * Translate Polish product name to English for Spoonacular API.
+     * Uses Gemini AI to get accurate food translation.
+     *
+     * @param string $polishName Polish product name
+     * @return string|null English translation or null if failed
+     */
+    public function translateProductName(string $polishName): ?string
+    {
+        try {
+            $prompt = "Przetłumacz nazwę produktu spożywczego z polskiego na angielski. " .
+                      "Odpowiedz TYLKO nazwą w języku angielskim, nic więcej. " .
+                      "Przykład: 'mleko' -> 'milk', 'jajko' -> 'egg'.\n\n" .
+                      "Produkt: {$polishName}";
+
+            $response = $this->callGeminiText($prompt, 0.3); // Low temperature for consistency
+
+            if (isset($response['error'])) {
+                Log::error('Translation failed', ['error' => $response['error']]);
+                return null;
+            }
+
+            $text = $response['text'] ?? '';
+            $translation = trim($text);
+
+            // Clean any extra quotes or whitespace
+            $translation = trim($translation, "\"' \n\r\t");
+
+            if (empty($translation)) {
+                Log::warning('Empty translation received', ['polish_name' => $polishName]);
+                return null;
+            }
+
+            Log::info('Product name translated', [
+                'polish' => $polishName,
+                'english' => $translation
+            ]);
+
+            return strtolower($translation); // Lowercase for consistency
+        } catch (\Exception $e) {
+            Log::error('Translation exception: ' . $e->getMessage());
+            return null;
+        }
+    }
 }
