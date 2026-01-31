@@ -89,7 +89,6 @@ class VertexAIService
             // Prepare the prompt for Gemini - request Polish product names directly
             $prompt = "Przeanalizuj to zdjęcie lodówki i wypisz wszystkie widoczne produkty spożywcze. Dla każdego produktu podaj: product_name (nazwa produktu PO POLSKU), estimated_quantity (jako liczba), unit (kg, g, szt, ml, l), oraz estimated_expires_days (dni do wygaśnięcia, lub null jeśli nieznane). Zwróć odpowiedź jako tablicę JSON. WAŻNE: Nazwy produktów MUSZĄ być po polsku (np. 'mleko', 'jajka', 'ser', 'masło').";
 
-            // Call Vertex AI API (simplified - actual implementation would use the SDK)
             // This is a placeholder for the actual API call structure
 
             $response = $this->callGeminiVision($prompt, $imageData);
